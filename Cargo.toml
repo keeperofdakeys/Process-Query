@@ -1,0 +1,7 @@
+[package]
+name = "ps_q"
+version = "0.1.0"
+authors = ["Josh Driver <keeperofdakeys@gmail.com>"]
+
+[dependencies]
+getopts = "0.2"
