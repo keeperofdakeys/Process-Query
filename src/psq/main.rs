@@ -2,7 +2,7 @@ extern crate getopts;
 extern crate procrs;
 use getopts::Options;
 use std::env;
-use procrs::Proc;
+use procrs::*;
 
 fn main() {
   let prog_opts = match parse_args() {
@@ -10,7 +10,9 @@ fn main() {
     None => { return; }
   };
   let pid: u32 = prog_opts.query.parse().unwrap();
-  let proc_q = Proc::new(pid);
+  let proc_struct = Proc::new(pid);
+  println!("{:?}", proc_struct);
+  let proc_map = get_proc_map();
 }
 
 struct ProgOpts {

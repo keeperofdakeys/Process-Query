@@ -1,7 +1,6 @@
-use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::fs::File;
+use std::fs::{self, DirEntry, File};
 use std::path::Path;
 use std::collections::HashMap;
 
@@ -32,7 +31,6 @@ impl Proc {
       cmdline: cmdline
     };
 
-    println!("{:?}", proc_struct);
     Ok(proc_struct)
   }
 
@@ -41,8 +39,10 @@ impl Proc {
       .map_err(err_str)
       .and_then(|mut file| {
         let mut contents = Vec::new();
-        file.read_to_end(&mut contents)
-          .map_err(err_str);
+        try!(
+          file.read_to_end(&mut contents)
+            .map_err(err_str)
+        );
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
@@ -113,8 +113,29 @@ impl ProcStatus {
   }
 }
 
-impl PartialEq for Proc {
-  fn eq(&self, other: &Proc) -> bool {
-    return self.status.pid == other.status.pid;
+pub type ProcMap = HashMap<TaskId, Proc>;
+
+pub fn get_proc_map() -> Result<ProcMap, String> {
+  let proc_dir = Path::new("/proc");
+
+  let mut proc_map = HashMap::new();
+  for entry in try!(fs::read_dir(proc_dir).map_err(err_str)) {
+    let name = try!(
+      entry
+        .map(|name|
+          name.file_name()
+        ).map_err(err_str)
+        .and_then(|name|
+          name.into_string()
+            .or(Err("Invalid dir name".to_string()))
+        )
+    );
+    let pid = match name.parse() {
+      Ok(pid) => pid,
+      Err(_) => continue
+    };
+    proc_map.insert(pid, Proc::new(pid));
   }
+  println!("{:?}", proc_map);
+  Err("Error".to_string())
 }
