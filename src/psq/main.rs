@@ -1,17 +1,16 @@
 extern crate getopts;
+extern crate procrs;
 use getopts::Options;
 use std::env;
-use procq::Proc;
-
-mod procq;
+use procrs::Proc;
 
 fn main() {
   let prog_opts = match parse_args() {
     Some(t) => { t }
     None => { return; }
   };
-  println!("{}", prog_opts.query);
-  let proc_q = Proc::new(3);
+  let pid: u32 = prog_opts.query.parse().unwrap();
+  let proc_q = Proc::new(pid);
 }
 
 struct ProgOpts {

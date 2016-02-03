@@ -1,7 +1,15 @@
 [package]
-name = "ps_q"
+name = "procrs"
 version = "0.1.0"
 authors = ["Josh Driver <keeperofdakeys@gmail.com>"]
 
 [dependencies]
 getopts = "0.2"
+
+[[bin]]
+name="psq"
+path="src/psq/main.rs"
+
+[lib]
+name="procrs"
+path="src/procrs/main.rs"
