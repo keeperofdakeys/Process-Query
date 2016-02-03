@@ -16,8 +16,8 @@ fn parse_taskid(taskid_str: String) -> Result<TaskId, String> {
 
 #[derive(Debug)]
 pub struct Proc {
-  status: ProcStatus,
-  cmdline: Vec<String>
+  pub status: ProcStatus,
+  pub cmdline: Vec<String>
 }
 
 impl Proc {
@@ -58,10 +58,10 @@ impl Proc {
 
 #[derive(Debug)]
 pub struct ProcStatus {
-  pid: TaskId,
-  ppid: TaskId,
-  tgid: TaskId,
-  name: String,
+  pub pid: TaskId,
+  pub ppid: TaskId,
+  pub tgid: TaskId,
+  pub name: String,
 }
 
 macro_rules! extract_key {
@@ -134,8 +134,8 @@ pub fn get_proc_map() -> Result<ProcMap, String> {
       Ok(pid) => pid,
       Err(_) => continue
     };
-    proc_map.insert(pid, Proc::new(pid));
+    let proc_struct = try!(Proc::new(pid));
+    proc_map.insert(pid, proc_struct);
   }
-  println!("{:?}", proc_map);
-  Err("Error".to_string())
+  Ok(proc_map)
 }
