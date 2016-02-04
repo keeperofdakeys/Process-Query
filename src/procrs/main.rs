@@ -1,6 +1,7 @@
+use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::fs::{self, DirEntry, File};
+use std::fs::{self, File, ReadDir, DirEntry};
 use std::path::Path;
 use std::collections::HashMap;
 use std::cmp::Ordering;
@@ -134,29 +135,55 @@ impl Ord for Proc {
   }
 }
 
+struct ProcIter {
+  dir_iter: ReadDir
+}
+
+impl ProcIter {
+  pub fn new() -> Result<Self, String> {
+    let proc_dir = Path::new("/proc");
+    let dir_iter = try!(fs::read_dir(proc_dir).map_err(err_str));
+    Ok(ProcIter{
+      dir_iter: dir_iter
+    })
+  }
+
+  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>) -> Option<Proc> {
+    entry_opt.ok()
+      .and_then(|entry|
+        entry.file_name().into_string().ok()
+      ).and_then(|name|
+        name.parse().ok()
+      ).and_then(|pid|
+        Proc::new(pid).ok()
+      )
+  }
+}
+
+impl Iterator for ProcIter {
+  type Item = Proc;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    for entry in self.dir_iter.by_ref() {
+      match (Self::proc_dir_filter)(entry) {
+        Some(p) => return Some(p),
+        None => continue
+      }
+    }
+    None
+  }
+
+  // Size may be anywhere from 0 to number of dirs
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    (0, self.dir_iter.size_hint().1)
+  }
+}
+
 pub type ProcMap = HashMap<TaskId, Proc>;
 
 pub fn get_proc_map() -> Result<ProcMap, String> {
-  let proc_dir = Path::new("/proc");
-
-  let mut proc_map = HashMap::new();
-  for entry in try!(fs::read_dir(proc_dir).map_err(err_str)) {
-    let name = try!(
-      entry
-        .map(|name|
-          name.file_name()
-        ).map_err(err_str)
-        .and_then(|name|
-          name.into_string()
-            .or(Err("Invalid dir name".to_string()))
-        )
-    );
-    let pid = match name.parse() {
-      Ok(pid) => pid,
-      Err(_) => continue
-    };
-    let proc_struct = try!(Proc::new(pid));
-    proc_map.insert(pid, proc_struct);
-  }
-  Ok(proc_map)
+  let iter = try!(ProcIter::new());
+  Ok(iter.map(|proc_struct|
+    (proc_struct.status.pid, proc_struct)
+  ).collect())
 }
