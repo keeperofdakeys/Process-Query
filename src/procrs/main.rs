@@ -130,7 +130,7 @@ impl PartialOrd for Proc {
 }
 impl Ord for Proc {
   fn cmp(&self, other: &Self) -> Ordering {
-    self.status.pid.cmp(&self.status.pid)
+    self.status.pid.cmp(&other.status.pid)
   }
 }
 

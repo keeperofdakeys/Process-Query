@@ -11,13 +11,13 @@ fn main() {
     None => { return; }
   };
   match prog_opts {
-    ProgOpts { query: Some(q), tree: t, .. } => {
-      let pid: u32 = q.parse().unwrap();
+    ProgOpts { query: Some(q), tree: false, .. } => {
+      let pid = q.parse().unwrap();
       let proc_struct = Proc::new(pid);
       println!("{:?}", proc_struct);
     },
 
-    ProgOpts { tree: true, .. } => {
+    ProgOpts { query: q, tree: true, .. } => {
       let proc_map = get_proc_map().unwrap();
 
       let mut child_procs = HashMap::new();
@@ -31,9 +31,17 @@ fn main() {
           .push(proc_struct);
       }
       proc_list.sort();
-      let start_pid = 0;
+      let pid = q.and_then(|p| p.parse().ok()).unwrap_or(1);;
+      let mut pid_procs = Vec::new();
 
-      let start_procs = child_procs.get(&start_pid).unwrap();
+      let start_procs = match proc_map.get(&pid) {
+        Some(proc_struct) => {
+          pid_procs.push(proc_struct);
+          &pid_procs
+        },
+        None => child_procs.get(&pid).unwrap()
+      };
+
       print_tree(&child_procs, start_procs, "".to_string());
     }
     _ => {
@@ -52,6 +60,7 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
     let pid = &proc_struct.status.pid;
 
     println!("{}{}", prefix, proc_struct.status.name);
+    // println!("{}{:#?}", prefix, proc_struct);
     let child_list = child_procs.get(pid);
     if let Some(v) = child_list {
       print_tree(child_procs, v, format!("{}{}", "  ", prefix));
