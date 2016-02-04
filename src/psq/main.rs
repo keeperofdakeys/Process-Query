@@ -16,6 +16,7 @@ fn main() {
       let proc_struct = Proc::new(pid);
       println!("{:?}", proc_struct);
     },
+
     ProgOpts { tree: true, .. } => {
       let proc_map = get_proc_map().unwrap();
 
@@ -24,21 +25,36 @@ fn main() {
 
       for (pid, proc_struct) in &proc_map {
         proc_list.push(pid);
-        child_procs.insert(proc_struct.status.ppid, proc_struct);
+        let ppid = proc_struct.status.ppid;
+        child_procs.entry(ppid)
+          .or_insert(Vec::new())
+          .push(proc_struct);
       }
       proc_list.sort();
-      for pid in proc_list {
-        let proc_struct = match proc_map.get(&pid) {
-          Some(p) => p,
-          _ => continue
-        };
-        println!("{:?}", proc_struct);
-      }
+      let start_pid = 0;
+
+      let start_procs = child_procs.get(&start_pid).unwrap();
+      print_tree(&child_procs, start_procs, "".to_string());
     }
     _ => {
       println!("{}", "Bad arguments");
       // print_usage();
       return;
+    }
+  }
+}
+
+fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
+              level_procs: &Vec<&Proc>, prefix: String) {
+  let mut proc_list = level_procs.to_vec();
+  proc_list.sort();
+  for proc_struct in proc_list {
+    let pid = &proc_struct.status.pid;
+
+    println!("{}{}", prefix, proc_struct.status.name);
+    let child_list = child_procs.get(pid);
+    if let Some(v) = child_list {
+      print_tree(child_procs, v, format!("{}{}", "  ", prefix));
     }
   }
 }

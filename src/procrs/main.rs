@@ -3,6 +3,7 @@ use std::io::BufReader;
 use std::fs::{self, DirEntry, File};
 use std::path::Path;
 use std::collections::HashMap;
+use std::cmp::Ordering;
 
 pub type TaskId = u32;
 
@@ -43,13 +44,15 @@ impl Proc {
           file.read_to_end(&mut contents)
             .map_err(err_str)
         );
+        if contents.ends_with(&['\0' as u8]) {
+          let _ = contents.pop();
+        }
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
           .map_err(err_str)
       }).map(|contents|
         contents.split('\0')
-          .filter(|a| !a.is_empty())
           .map(|a| a.to_string())
           .collect()
       )
@@ -110,6 +113,24 @@ impl ProcStatus {
       tgid: tgid,
       name: name
     })
+  }
+}
+
+impl PartialEq for Proc {
+  fn eq(&self, other: &Self) -> bool {
+    self.status.pid.eq(&other.status.pid)
+  }
+}
+
+impl Eq for Proc {}
+impl PartialOrd for Proc {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    Some(self.cmp(other))
+  }
+}
+impl Ord for Proc {
+  fn cmp(&self, other: &Self) -> Ordering {
+    self.status.pid.cmp(&self.status.pid)
   }
 }
 
