@@ -53,10 +53,22 @@ impl Proc {
         String::from_utf8(contents)
           .map_err(err_str)
       }).map(|contents|
-        contents.split('\0')
+        contents
+          .split('\0')
           .map(|a| a.to_string())
           .collect()
       )
+  }
+
+  // Return true if query matches this process
+  fn query(&self, query: &ProcQuery) -> bool {
+    match *query {
+      ProcQuery::PidQuery(ref q) => taskid_query(self.status.pid, &q),
+      ProcQuery::PpidQuery(ref q) => taskid_query(self.status.ppid, &q),
+      ProcQuery::NameQuery(ref q) => string_query(&self.status.name, &q),
+      ProcQuery::CmdlineQuery(ref q) => string_s_query(&self.cmdline, &q),
+      ProcQuery::NoneQuery => true
+    }
   }
 }
 
@@ -136,7 +148,8 @@ impl Ord for Proc {
 }
 
 struct ProcIter {
-  dir_iter: ReadDir
+  dir_iter: ReadDir,
+  query: ProcQuery
 }
 
 impl ProcIter {
@@ -144,11 +157,14 @@ impl ProcIter {
     let proc_dir = Path::new("/proc");
     let dir_iter = try!(fs::read_dir(proc_dir).map_err(err_str));
     Ok(ProcIter{
-      dir_iter: dir_iter
+      dir_iter: dir_iter,
+      query: ProcQuery::NoneQuery
     })
   }
 
-  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>) -> Option<Proc> {
+  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &ProcQuery)
+    -> Option<Proc> {
+    // TODO: This sucks, find a better way
     entry_opt.ok()
       .and_then(|entry|
         entry.file_name().into_string().ok()
@@ -156,6 +172,12 @@ impl ProcIter {
         name.parse().ok()
       ).and_then(|pid|
         Proc::new(pid).ok()
+      ).and_then(|proc_struct|
+        if proc_struct.query(query) {
+          Some(proc_struct)
+        } else {
+          None
+        }
       )
   }
 }
@@ -165,7 +187,7 @@ impl Iterator for ProcIter {
 
   fn next(&mut self) -> Option<Self::Item> {
     for entry in self.dir_iter.by_ref() {
-      match (Self::proc_dir_filter)(entry) {
+      match Self::proc_dir_filter(entry, &self.query) {
         Some(p) => return Some(p),
         None => continue
       }
@@ -187,3 +209,34 @@ pub fn get_proc_map() -> Result<ProcMap, String> {
     (proc_struct.status.pid, proc_struct)
   ).collect())
 }
+
+pub enum ProcQuery {
+  PidQuery(String),
+  PpidQuery(String),
+  NameQuery(String),
+  CmdlineQuery(String),
+  NoneQuery
+}
+
+pub fn taskid_query(tid: TaskId, query: &str) -> bool {
+  let q_taskid: TaskId = match query.parse::<u32>() {
+    Ok(t) => t,
+    Err(_) => return false
+  };
+  q_taskid == tid
+}
+
+pub fn string_query(text: &str, query: &str) -> bool {
+  text == query
+}
+
+pub fn string_s_query(text_vec: &Vec<String>, query: &str) -> bool {
+  for text in text_vec {
+    if string_query(text, query) {
+      return true;
+    }
+  }
+  false
+}
+
+

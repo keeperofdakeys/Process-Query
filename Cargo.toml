@@ -12,4 +12,4 @@ path="src/psq/main.rs"
 
 [lib]
 name="procrs"
-path="src/procrs/main.rs"
+path="src/procrs/lib.rs"
