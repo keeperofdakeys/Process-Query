@@ -63,8 +63,8 @@ impl Proc {
   // Return true if query matches this process
   fn query(&self, query: &ProcQuery) -> bool {
     match *query {
-      ProcQuery::PidQuery(ref q) => taskid_query(self.status.pid, &q),
-      ProcQuery::PpidQuery(ref q) => taskid_query(self.status.ppid, &q),
+      ProcQuery::PidQuery(q) => taskid_query(self.status.pid, q),
+      ProcQuery::PpidQuery(q) => taskid_query(self.status.ppid, q),
       ProcQuery::NameQuery(ref q) => string_query(&self.status.name, &q),
       ProcQuery::CmdlineQuery(ref q) => string_s_query(&self.cmdline, &q),
       ProcQuery::NoneQuery => true
@@ -108,9 +108,9 @@ impl ProcStatus {
 
               match (split.get(0), split.get(1)) {
                 (Some(key), Some(value)) =>
-                  Ok((key.trim().to_string(),
-                     value.trim().to_string())),
-                _ => Err("Error reading status line".to_string())
+                  Ok((key.trim().to_owned(),
+                     value.trim().to_owned())),
+                _ => Err("Error reading status line".to_owned())
               }
              }).ok()
       ).collect();
@@ -147,18 +147,22 @@ impl Ord for Proc {
   }
 }
 
-struct ProcIter {
+pub struct ProcIter {
   dir_iter: ReadDir,
   query: ProcQuery
 }
 
 impl ProcIter {
   pub fn new() -> Result<Self, String> {
+    Self::new_query(ProcQuery::NoneQuery)
+  }
+
+  pub fn new_query(query: ProcQuery) -> Result<Self, String> {
     let proc_dir = Path::new("/proc");
     let dir_iter = try!(fs::read_dir(proc_dir).map_err(err_str));
     Ok(ProcIter{
       dir_iter: dir_iter,
-      query: ProcQuery::NoneQuery
+      query: query
     })
   }
 
@@ -211,19 +215,40 @@ pub fn get_proc_map() -> Result<ProcMap, String> {
 }
 
 pub enum ProcQuery {
-  PidQuery(String),
-  PpidQuery(String),
+  PidQuery(TaskId),
+  PpidQuery(TaskId),
   NameQuery(String),
   CmdlineQuery(String),
   NoneQuery
 }
 
-pub fn taskid_query(tid: TaskId, query: &str) -> bool {
-  let q_taskid: TaskId = match query.parse::<u32>() {
-    Ok(t) => t,
-    Err(_) => return false
-  };
-  q_taskid == tid
+pub fn create_query(query: &str) -> Result<ProcQuery, String> {
+  let splits: Vec<_> = query.splitn(2, '=').collect();
+
+  match splits.len() {
+    0 => Ok(ProcQuery::NoneQuery),
+    1 => Ok(match query.parse().ok() {
+      Some(tid) => ProcQuery::PidQuery(tid),
+      None => ProcQuery::NameQuery(query.to_owned())
+    }),
+    _ => {
+      let q_text = splits[1].to_owned();
+      let q_tid = q_text.parse();
+      match &*splits[0].to_lowercase() {
+        "pid" => q_tid.map(|q| ProcQuery::PidQuery(q))
+          .or(Err("Query value for type 'pid' not valid".to_owned())),
+        "ppid" => q_tid.map(|q| ProcQuery::PpidQuery(q))
+          .or(Err("Query value for type 'ppid' not valid".to_owned())),
+        "name" => Ok(ProcQuery::NameQuery(q_text)),
+        "cmdline" => Ok(ProcQuery::CmdlineQuery(q_text)),
+        _ => Err("Invalid query type".to_owned())
+      }
+    }
+  }
+}
+
+pub fn taskid_query(tid: TaskId, query: TaskId) -> bool {
+  tid == query
 }
 
 pub fn string_query(text: &str, query: &str) -> bool {

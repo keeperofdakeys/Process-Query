@@ -10,15 +10,23 @@ fn main() {
     Some(t) => { t }
     None => { return; }
   };
-  match prog_opts {
-    ProgOpts { query: Some(q), tree: false, .. } => {
-      let pid = q.parse().unwrap();
-      let proc_struct = Proc::new(pid);
-      println!("{:?}", proc_struct);
+  let proc_query = match prog_opts.query {
+    Some(ref q_text) => create_query(&q_text).unwrap(),
+    None => ProcQuery::NoneQuery
+  };
+  match prog_opts.tree {
+    false => {
+      for proc_struct in ProcIter::new_query(proc_query).unwrap() {
+        println!("{:?}", proc_struct);
+      }
     },
 
-    ProgOpts { query: q, tree: true, .. } => {
-      let proc_map = get_proc_map().unwrap();
+    true => {
+      let proc_map: HashMap<_, _> =
+        ProcIter::new().unwrap()
+        .map(|proc_struct|
+          (proc_struct.status.pid, proc_struct)
+        ).collect();
 
       let mut child_procs = HashMap::new();
       let mut proc_list = Vec::new();
@@ -31,7 +39,7 @@ fn main() {
           .push(proc_struct);
       }
       proc_list.sort();
-      let pid = q.and_then(|p| p.parse().ok()).unwrap_or(1);;
+      let pid = prog_opts.query.and_then(|p| p.parse().ok()).unwrap_or(1);;
       let mut pid_procs = Vec::new();
 
       let start_procs = match proc_map.get(&pid) {
@@ -39,15 +47,10 @@ fn main() {
           pid_procs.push(proc_struct);
           &pid_procs
         },
-        None => child_procs.get(&pid).unwrap()
+        None => child_procs.get(&pid).expect("Invalid pid")
       };
 
       print_tree(&child_procs, start_procs, "".to_string());
-    }
-    _ => {
-      println!("{}", "Bad arguments");
-      // print_usage();
-      return;
     }
   }
 }
@@ -60,7 +63,6 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
     let pid = &proc_struct.status.pid;
 
     println!("{}{}", prefix, proc_struct.status.name);
-    // println!("{}{:#?}", prefix, proc_struct);
     let child_list = child_procs.get(pid);
     if let Some(v) = child_list {
       print_tree(child_procs, v, format!("{}{}", "  ", prefix));
