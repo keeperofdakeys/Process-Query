@@ -16,8 +16,10 @@ fn main() {
   };
   match prog_opts.tree {
     false => {
+      println!("Pid\tPpid\tName\tCmd");
       for proc_struct in ProcIter::new_query(proc_query).unwrap() {
-        println!("{:?}", proc_struct);
+        println!("{}\t{}\t{}\t{}", proc_struct.status.pid, proc_struct.status.ppid,
+                 proc_struct.status.name, proc_struct.cmdline.join(" "));
       }
     },
 
