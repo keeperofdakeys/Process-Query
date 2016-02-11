@@ -33,6 +33,8 @@ impl Proc {
       cmdline: cmdline
     };
 
+    let _ = ProcStat::new(&proc_dir).unwrap();
+
     Ok(proc_struct)
   }
 
@@ -102,59 +104,103 @@ fn get_procstate(state: char) -> Option<ProcState> {
   }
 }
 
+#[derive(Debug)]
 pub struct ProcStat {
   pub pid: TaskId,
-  pub comm: String,
-  pub state: ProcState,
-  pub ppid: TaskId,
-  pub pgrp: i32,
-  pub session: i32,
-  pub tty_nr: i32,
-  pub tpgid: i32,
-  pub flags: u32,
-  pub minflt: u64,
-  pub cminflt: u64,
-  pub majflt: u64,
-  pub cmajflt: u64,
-  pub utime: u64,
-  pub stime: u64,
-  pub cutime: i64,
-  pub cstime: i64,
-  pub priority: i64,
-  pub nice: i64,
-  pub num_threads: i64,
-  pub itrealvalue: i64,
-  pub starttime: u64,
-  pub vsize: u64,
-  pub rss: i64,
-  pub rsslim: u64,
-  pub startcode: u64,
-  pub endcode: u64,
-  pub startstack: u64,
-  pub kstkesp: u64,
-  pub kstkeip: u64,
-  pub signal: u64,
-  pub blocked: u64,
-  pub sigignore: u64,
-  pub sigcatch: u64,
-  pub wchan: u64,
-  pub nswap: u64,
-  pub cnswap: u64,
-  pub exit_signal: i32,
-  pub processor: i32,
-  pub rt_priority: u32,
-  pub policy: u32,
-  pub delayacct_blkio_ticks: u64,
-  pub guest_time: u64,
-  pub cguest_time: i64,
-  pub start_data: u64,
-  pub end_data: u64,
-  pub start_brk: u64,
-  pub arg_start: u64,
-  pub arg_end: u64,
-  pub env_start: u64,
-  pub env_end: u64,
+//  pub comm: String,
+//  pub state: ProcState,
+//  pub ppid: TaskId,
+//  pub pgrp: i32,
+//  pub session: i32,
+//  pub tty_nr: i32,
+//  pub tpgid: i32,
+//  pub flags: u32,
+//  pub minflt: u64,
+//  pub cminflt: u64,
+//  pub majflt: u64,
+//  pub cmajflt: u64,
+//  pub utime: u64,
+//  pub stime: u64,
+//  pub cutime: i64,
+//  pub cstime: i64,
+//  pub priority: i64,
+//  pub nice: i64,
+//  pub num_threads: i64,
+//  pub itrealvalue: i64,
+//  pub starttime: u64,
+//  pub vsize: u64,
+//  pub rss: i64,
+//  pub rsslim: u64,
+//  pub startcode: u64,
+//  pub endcode: u64,
+//  pub startstack: u64,
+//  pub kstkesp: u64,
+//  pub kstkeip: u64,
+//  pub signal: u64,
+//  pub blocked: u64,
+//  pub sigignore: u64,
+//  pub sigcatch: u64,
+//  pub wchan: u64,
+//  pub nswap: u64,
+//  pub cnswap: u64,
+//  pub exit_signal: i32,
+//  pub processor: i32,
+//  pub rt_priority: u32,
+//  pub policy: u32,
+//  pub delayacct_blkio_ticks: u64,
+//  pub guest_time: u64,
+//  pub cguest_time: i64,
+//  pub start_data: u64,
+//  pub end_data: u64,
+//  pub start_brk: u64,
+//  pub arg_start: u64,
+//  pub arg_end: u64,
+//  pub env_start: u64,
+//  pub env_end: u64,
   pub exit_code: i32
+}
+
+const READ_ERROR: &'static str = "Error parsing /proc/../stat file";
+
+impl ProcStat {
+  // Generate ProcStat struct given a process directory
+  fn new(proc_dir: &str) -> Result<Self, String> {
+    let file = try!(
+      File::open(Path::new(proc_dir).join("stat"))
+        .map_err(err_str)
+    );
+    let mut contents = try!(
+      file.bytes().collect::<Result<Vec<_>, _>>()
+        .map_err(err_str)
+        .and_then(|s|
+          String::from_utf8(s)
+          .map_err(err_str)
+        )
+    );
+
+    // Remove new-line at end
+    let _ = contents.pop();
+
+    let mut split = contents.split(' ');
+
+    Ok(ProcStat {
+      pid: try!(
+        split.next().ok_or(READ_ERROR.to_owned())
+        .and_then(|s|
+           s.parse()
+           .map_err(err_str)
+        )
+      ),
+      // From here parse from back, since arbitrary data can be in program name
+      exit_code: try!(
+        split.next_back().ok_or(READ_ERROR.to_owned())
+        .and_then(|s|
+           s.parse()
+           .map_err(err_str)
+        )
+      )
+    })
+  }
 }
 
 #[derive(Debug)]
