@@ -16,6 +16,21 @@ fn parse_taskid(taskid_str: String) -> Result<TaskId, String> {
   taskid_str.parse().map_err(err_str)
 }
 
+fn parse_uids(uid_str: String) -> Result<(u32, u32, u32, u32), String> {
+  let uids = try!(
+    uid_str.split("\t")
+      .filter(|s| s != &"")
+      .map(|s|
+        s.parse()
+      ).collect::<Result<Vec<_>, _>>()
+      .map_err(err_str)
+  );
+  if uids.len() != 4 {
+    return Err("Error parsing UIDs".to_owned());
+  }
+  Ok((uids[0], uids[1], uids[2], uids[3]))
+}
+
 #[derive(Debug)]
 pub struct Proc {
   pub stat: Box<ProcStat>,
@@ -294,6 +309,10 @@ pub struct ProcStatus {
   pub ppid: TaskId,
   pub tgid: TaskId,
   pub name: String,
+  // uid: Real, Effective, Saved, Filesystem
+  pub uid: (u32, u32, u32, u32),
+  // gid: Real, Effective, Saved, Filesystem
+  pub gid: (u32, u32, u32, u32)
 }
 
 macro_rules! extract_key {
@@ -331,16 +350,13 @@ impl ProcStatus {
              }).ok()
       ).collect();
 
-    let pid = extract_key!(status, "Pid", parse_taskid);
-    let ppid = extract_key!(status, "PPid", parse_taskid);
-    let tgid = extract_key!(status, "Tgid", parse_taskid);
-    let name = extract_key!(status, "Name", |a| Ok(a));
-
     Ok(ProcStatus{
-      pid: pid,
-      ppid: ppid,
-      tgid: tgid,
-      name: name
+      pid: extract_key!(status, "Pid", parse_taskid),
+      ppid: extract_key!(status, "PPid", parse_taskid),
+      tgid: extract_key!(status, "Tgid", parse_taskid),
+      name: extract_key!(status, "Name", |a| Ok(a)),
+      uid : extract_key!(status, "Uid", parse_uids),
+      gid : extract_key!(status, "Gid", parse_uids)
     })
   }
 }
