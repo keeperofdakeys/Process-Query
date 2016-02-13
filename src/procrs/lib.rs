@@ -6,7 +6,7 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::cmp::Ordering;
 
-pub type TaskId = u32;
+pub type TaskId = i32;
 
 fn err_str<T: ToString>(err: T) -> String {
   err.to_string()
