@@ -18,8 +18,8 @@ fn main() {
     false => {
       println!("Pid\tPpid\tName\tCmd");
       for proc_struct in ProcIter::new_query(proc_query).unwrap() {
-        println!("{}\t{}\t{}\t{}", proc_struct.status.pid, proc_struct.status.ppid,
-                 proc_struct.status.name, proc_struct.cmdline.join(" "));
+        println!("{}\t{}\t{}\t{}", proc_struct.stat.pid, proc_struct.stat.ppid,
+                 proc_struct.stat.comm, proc_struct.cmdline.join(" "));
       }
     },
 
@@ -27,7 +27,7 @@ fn main() {
       let proc_map: HashMap<_, _> =
         ProcIter::new().unwrap()
         .map(|proc_struct|
-          (proc_struct.status.pid, proc_struct)
+          (proc_struct.stat.pid, proc_struct)
         ).collect();
 
       let mut child_procs = HashMap::new();
@@ -35,7 +35,7 @@ fn main() {
 
       for (pid, proc_struct) in &proc_map {
         proc_list.push(pid);
-        let ppid = proc_struct.status.ppid;
+        let ppid = proc_struct.stat.ppid;
         child_procs.entry(ppid)
           .or_insert(Vec::new())
           .push(proc_struct);
@@ -62,9 +62,9 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
   let mut proc_list = level_procs.to_vec();
   proc_list.sort();
   for proc_struct in proc_list {
-    let pid = &proc_struct.status.pid;
+    let pid = &proc_struct.stat.pid;
 
-    println!("{}{}", prefix, proc_struct.status.name);
+    println!("{}{}", prefix, proc_struct.stat.comm);
     let child_list = child_procs.get(pid);
     if let Some(v) = child_list {
       print_tree(child_procs, v, format!("{}{}", "  ", prefix));

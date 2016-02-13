@@ -66,9 +66,9 @@ impl Proc {
   // Return true if query matches this process
   fn query(&self, query: &ProcQuery) -> bool {
     match *query {
-      ProcQuery::PidQuery(q) => taskid_query(self.status.pid, q),
-      ProcQuery::PpidQuery(q) => taskid_query(self.status.ppid, q),
-      ProcQuery::NameQuery(ref q) => string_query(&self.status.name, &q),
+      ProcQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
+      ProcQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
+      ProcQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
       ProcQuery::CmdlineQuery(ref q) => string_s_query(&self.cmdline, &q),
       ProcQuery::NoneQuery => true
     }
@@ -347,7 +347,7 @@ impl ProcStatus {
 
 impl PartialEq for Proc {
   fn eq(&self, other: &Self) -> bool {
-    self.status.pid.eq(&other.status.pid)
+    self.stat.pid.eq(&other.stat.pid)
   }
 }
 
@@ -359,7 +359,7 @@ impl PartialOrd for Proc {
 }
 impl Ord for Proc {
   fn cmp(&self, other: &Self) -> Ordering {
-    self.status.pid.cmp(&other.status.pid)
+    self.stat.pid.cmp(&other.stat.pid)
   }
 }
 
@@ -426,7 +426,7 @@ pub type ProcMap = HashMap<TaskId, Proc>;
 pub fn get_proc_map() -> Result<ProcMap, String> {
   let iter = try!(ProcIter::new());
   Ok(iter.map(|proc_struct|
-    (proc_struct.status.pid, proc_struct)
+    (proc_struct.stat.pid, proc_struct)
   ).collect())
 }
 
