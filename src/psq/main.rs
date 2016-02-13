@@ -20,9 +20,12 @@ fn main() {
     false => {
       let mut table = Table::init(
         ProcIter::new_query(proc_query).unwrap()
-          .map(|p|
-            row![p.stat.pid, p.stat.ppid, p.stat.comm, p.cmdline.join(" ")]
-          ).collect::<Vec<_>>()
+          .map(|p_r|
+            p_r.map(|p|
+              row![p.stat.pid, p.stat.ppid, p.stat.comm, p.cmdline.join(" ")]
+            )
+          ).collect::<Result<Vec<_>, String>>()
+          .unwrap()
       );
       table.set_titles(row!["Pid", "Ppid", "Command", "Cmd Args"]);
       table.set_format(*prettytable::format::consts::FORMAT_CLEAN);
@@ -32,9 +35,12 @@ fn main() {
     true => {
       let proc_map: HashMap<_, _> =
         ProcIter::new().unwrap()
-        .map(|proc_struct|
-          (proc_struct.stat.pid, proc_struct)
-        ).collect();
+        .map(|p_r|
+          p_r.map(|p|
+            (p.stat.pid, p)
+          )
+        ).collect::<Result<_, String>>()
+        .unwrap();
 
       let mut child_procs = HashMap::new();
       let mut proc_list = Vec::new();

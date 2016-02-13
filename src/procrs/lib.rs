@@ -399,27 +399,38 @@ impl ProcIter {
   }
 
   fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &ProcQuery)
-    -> Option<Proc> {
+    -> Option<Result<Proc, String>> {
     // TODO: This sucks, find a better way
-    entry_opt.ok()
+    let file = entry_opt
+      .map_err(err_str)
       .and_then(|entry|
-        entry.file_name().into_string().ok()
-      ).and_then(|name|
-        name.parse().ok()
-      ).and_then(|pid|
-        Proc::new(pid).ok()
-      ).and_then(|proc_struct|
-        if proc_struct.query(query) {
-          Some(proc_struct)
-        } else {
-          None
+        entry.file_name().into_string()
+          .or(Err("Error parsing filename".to_owned()))
+      );
+
+    if file.is_err() {
+      return None;
+    }
+
+    match file.unwrap().parse() {
+      Ok(pid) => {
+        let proc_s_r = Proc::new(pid);
+        if proc_s_r.is_err() {
+          return Some(proc_s_r);
         }
-      )
+        let proc_s = proc_s_r.unwrap();
+        match proc_s.query(query) {
+          true => Some(Ok(proc_s)),
+          false => None
+        }
+      },
+      Err(_) => None
+    }
   }
 }
 
 impl Iterator for ProcIter {
-  type Item = Proc;
+  type Item = Result<Proc, String>;
 
   fn next(&mut self) -> Option<Self::Item> {
     for entry in self.dir_iter.by_ref() {
@@ -441,9 +452,11 @@ pub type ProcMap = HashMap<TaskId, Proc>;
 
 pub fn get_proc_map() -> Result<ProcMap, String> {
   let iter = try!(ProcIter::new());
-  Ok(iter.map(|proc_struct|
-    (proc_struct.stat.pid, proc_struct)
-  ).collect())
+  iter.map(|proc_s|
+    proc_s.map(|p|
+      (p.stat.pid, p)
+    )
+  ).collect()
 }
 
 pub enum ProcQuery {
