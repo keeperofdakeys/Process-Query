@@ -1,6 +1,8 @@
 extern crate getopts;
 extern crate procrs;
+#[macro_use] extern crate prettytable;
 use getopts::Options;
+use prettytable::Table;
 use std::env;
 use std::collections::HashMap;
 use procrs::*;
@@ -16,11 +18,15 @@ fn main() {
   };
   match prog_opts.tree {
     false => {
-      println!("Pid\tPpid\tName\tCmd");
-      for proc_struct in ProcIter::new_query(proc_query).unwrap() {
-        println!("{}\t{}\t{}\t{}", proc_struct.stat.pid, proc_struct.stat.ppid,
-                 proc_struct.stat.comm, proc_struct.cmdline.join(" "));
-      }
+      let mut table = Table::init(
+        ProcIter::new_query(proc_query).unwrap()
+          .map(|p|
+            row![p.stat.pid, p.stat.ppid, p.stat.comm, p.cmdline.join(" ")]
+          ).collect::<Vec<_>>()
+      );
+      table.set_titles(row!["Pid", "Ppid", "Command", "Cmd Args"]);
+      table.set_format(*prettytable::format::consts::FORMAT_CLEAN);
+      table.printstd();
     },
 
     true => {
