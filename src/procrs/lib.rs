@@ -84,7 +84,7 @@ impl Proc {
       ProcQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
       ProcQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
       ProcQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
-      ProcQuery::CmdlineQuery(ref q) => string_s_query(&self.cmdline, &q),
+      ProcQuery::CmdlineQuery(ref q) => string_query(&self.cmdline.join(" "), &q),
       ProcQuery::NoneQuery => true
     }
   }
@@ -497,16 +497,5 @@ pub fn taskid_query(tid: TaskId, query: TaskId) -> bool {
 }
 
 pub fn string_query(text: &str, query: &str) -> bool {
-  text == query
+  text.contains(query)
 }
-
-pub fn string_s_query(text_vec: &Vec<String>, query: &str) -> bool {
-  for text in text_vec {
-    if string_query(text, query) {
-      return true;
-    }
-  }
-  false
-}
-
-
