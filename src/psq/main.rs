@@ -3,6 +3,7 @@ extern crate procrs;
 #[macro_use] extern crate prettytable;
 use getopts::Options;
 use prettytable::Table;
+use prettytable::format::FormatBuilder;
 use std::env;
 use std::collections::HashMap;
 use procrs::*;
@@ -27,8 +28,11 @@ fn main() {
           ).collect::<Result<Vec<_>, String>>()
           .unwrap()
       );
-      table.set_titles(row!["Pid", "Ppid", "Command", "Cmd Args"]);
-      table.set_format(*prettytable::format::consts::FORMAT_CLEAN);
+      let format = FormatBuilder::new()
+        .column_separator(' ')
+        .build();
+      table.set_titles(row!["Pid", "Ppid", "Comm", "Cmd"]);
+      table.set_format(format);
       table.printstd();
     },
 
