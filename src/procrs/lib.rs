@@ -39,6 +39,8 @@ pub struct Proc {
   pub cmdline: Vec<String>
 }
 
+use ProcPart::*;
+
 // Fields in a Proc
 enum ProcPart {
   ProcPartStat,
@@ -50,13 +52,15 @@ impl fmt::Display for ProcPart {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "{}",
       match *self {
-        ProcPart::ProcPartStat => "stat",
-        ProcPart::ProcPartStatus => "status",
-        ProcPart::ProcPartCmdline => "cmdline"
+        ProcPartStat => "stat",
+        ProcPartStatus => "status",
+        ProcPartCmdline => "cmdline"
       }
     )
   }
 }
+
+use ProcErrorType::*;
 
 // Error types that can occur making a Proc
 enum ProcErrorType {
@@ -68,18 +72,22 @@ impl fmt::Display for ProcErrorType {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "{}",
       match *self {
-        ProcErrorType::ProcParseError => "parsing the file",
-        ProcErrorType::ProcReadError => "reading the file"
+        ProcParseError => "parsing the file",
+        ProcReadError => "reading the file"
       }
     )
   }
 }
 
+use ProcError::*;
+
 // An error that occurs during parsing
 enum ProcError {
-  // A soft error means the proc has at least a valid status field
+  // A soft error is something that is temporary, or recoverable.
+  // For example, trying to read a /proc file for an invalid pid.
   ProcSoftError(ProcErrorType, ProcPart, String),
-  // A hard error means that the proc has no status field
+  // A hard error is something that is unrecoverable.
+  // For example, a missing /proc, or a parsing error.
   ProcHardError(ProcErrorType, ProcPart, String),
 }
 
@@ -111,7 +119,7 @@ impl Proc {
     let proc_stat = try!(ProcStat::new(&proc_dir));
     // Once we have stat, we aren't too mindful if we miss the rest.
     let proc_status = try!(ProcStatus::new(&proc_dir));
-    let cmdline = try!(Self::read_cmdline(&proc_dir));
+    let cmdline = try!(Self::read_cmdline(&proc_dir).map_err(err_str));
 
     let proc_struct = Proc{
       stat: Box::new(proc_stat),
@@ -122,14 +130,16 @@ impl Proc {
     Ok(proc_struct)
   }
 
-  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, String> {
+  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, ProcError> {
     File::open(Path::new(proc_dir).join("cmdline"))
-      .map_err(err_str)
+      .map_err(|e| ProcSoftError(ProcReadError, ProcPartCmdline, e.to_string()))
       .and_then(|mut file| {
         let mut contents = Vec::new();
         try!(
           file.read_to_end(&mut contents)
-            .map_err(err_str)
+            .map_err(|e|
+              ProcSoftError(ProcReadError,
+                ProcPartCmdline, e.to_string()))
         );
         if contents.ends_with(&['\0' as u8]) {
           let _ = contents.pop();
@@ -137,7 +147,9 @@ impl Proc {
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
-          .map_err(err_str)
+          .map_err(|e|
+            ProcSoftError(ProcParseError,
+              ProcPartCmdline, e.to_string()))
       }).map(|contents|
         contents
           .split('\0')
