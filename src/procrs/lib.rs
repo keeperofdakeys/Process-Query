@@ -42,8 +42,8 @@ pub struct Proc {
 use ProcPart::*;
 
 // Fields in a Proc
-#[derive(Clone)]
-enum ProcPart {
+#[derive(Clone, Debug)]
+pub enum ProcPart {
   ProcPartStat,
   ProcPartStatus,
   ProcPartCmdline
@@ -64,8 +64,8 @@ impl fmt::Display for ProcPart {
 use ProcErrorType::*;
 
 // Error types that can occur making a Proc
-#[derive(Clone)]
-enum ProcErrorType {
+#[derive(Clone, Debug)]
+pub enum ProcErrorType {
   ProcParseError,
   ProcReadError,
 }
@@ -84,14 +84,23 @@ impl fmt::Display for ProcErrorType {
 use ProcError::*;
 
 // An error that occurs during parsing
-#[derive(Clone)]
-enum ProcError {
+#[derive(Clone, Debug)]
+pub enum ProcError {
   // A soft error is something that is temporary, or recoverable.
   // For example, trying to read a /proc file for an invalid pid.
   ProcSoftError(ProcErrorType, ProcPart, String),
   // A hard error is something that is unrecoverable.
   // For example, a missing /proc, or a parsing error.
   ProcHardError(ProcErrorType, ProcPart, String),
+}
+
+impl ProcError {
+  fn is_hard(&self) -> bool {
+    return match *self {
+      ProcHardError(..) => true,
+      ProcSoftError(..) => false
+    }
+  }
 }
 
 impl fmt::Display for ProcError {
@@ -117,12 +126,12 @@ impl fmt::Display for ProcError {
 }
 
 impl Proc {
-  pub fn new(pid: TaskId) -> Result<Self, String> {
+  pub fn new(pid: TaskId) -> Result<Self, ProcError> {
     let proc_dir = format!("/proc/{}", pid);
-    let proc_stat = try!(ProcStat::new(&proc_dir).map_err(err_str));
+    let proc_stat = try!(ProcStat::new(&proc_dir));
     // Once we have stat, we aren't too mindful if we miss the rest.
     let proc_status = try!(ProcStatus::new(&proc_dir));
-    let cmdline = try!(Self::read_cmdline(&proc_dir).map_err(err_str));
+    let cmdline = try!(Self::read_cmdline(&proc_dir));
 
     let proc_struct = Proc{
       stat: Box::new(proc_stat),
@@ -264,7 +273,7 @@ pub struct ProcStat {
 macro_rules! stat_parse_num {
   ($item:expr, $err: expr) =>
     (try!(
-      $item.ok_or($err)
+      $item.ok_or($err.clone())
       .and_then(|s|
          s.parse()
            .map_err(|e: std::num::ParseIntError|
@@ -316,50 +325,55 @@ impl ProcStat {
 
     let mut split = suffix.split(' ');
 
+    let parse_error = ProcHardError(
+      ProcParseError, ProcPartStat,
+      "Error parsing file".to_owned()
+    );
+
     Ok(ProcStat {
-      pid: stat_parse_num!(prefix.split(' ').next(), read_error.clone()),
+      pid: stat_parse_num!(prefix.split(' ').next(), parse_error),
       // From here parse from back, since arbitrary data can be in program name
       comm: prog_name.to_owned(),
       state: try!(
         split.next()
           .and_then(|s|
             get_procstate(s)
-          ).ok_or(read_error.clone())
+          ).ok_or(parse_error.clone())
       ),
-      ppid: stat_parse_num!(split.next(), read_error.clone()),
-      pgrp: stat_parse_num!(split.next(), read_error.clone()),
-      session: stat_parse_num!(split.next(), read_error.clone()),
-      tty_nr: stat_parse_num!(split.next(), read_error.clone()),
-      tpgid: stat_parse_num!(split.next(), read_error.clone()),
-      flags: stat_parse_num!(split.next(), read_error.clone()),
-      minflt: stat_parse_num!(split.next(), read_error.clone()),
-      cminflt: stat_parse_num!(split.next(), read_error.clone()),
-      majflt: stat_parse_num!(split.next(), read_error.clone()),
-      cmajflt: stat_parse_num!(split.next(), read_error.clone()),
-      utime: stat_parse_num!(split.next(), read_error.clone()),
-      stime: stat_parse_num!(split.next(), read_error.clone()),
-      cutime: stat_parse_num!(split.next(), read_error.clone()),
-      cstime: stat_parse_num!(split.next(), read_error.clone()),
-      priority: stat_parse_num!(split.next(), read_error.clone()),
-      nice: stat_parse_num!(split.next(), read_error.clone()),
-      num_threads: stat_parse_num!(split.next(), read_error.clone()),
-      itrealvalue: stat_parse_num!(split.next(), read_error.clone()),
-      starttime: stat_parse_num!(split.next(), read_error.clone()),
-      vsize: stat_parse_num!(split.next(), read_error.clone()),
-      rss: stat_parse_num!(split.next(), read_error.clone()),
-      rsslim: stat_parse_num!(split.next(), read_error.clone()),
-      startcode: stat_parse_num!(split.next(), read_error.clone()),
-      endcode: stat_parse_num!(split.next(), read_error.clone()),
-      startstack: stat_parse_num!(split.next(), read_error.clone()),
-      kstkesp: stat_parse_num!(split.next(), read_error.clone()),
-      kstkeip: stat_parse_num!(split.next(), read_error.clone()),
-      signal: stat_parse_num!(split.next(), read_error.clone()),
-      blocked: stat_parse_num!(split.next(), read_error.clone()),
-      sigignore: stat_parse_num!(split.next(), read_error.clone()),
-      sigcatch: stat_parse_num!(split.next(), read_error.clone()),
-      wchan: stat_parse_num!(split.next(), read_error.clone()),
-      nswap: stat_parse_num!(split.next(), read_error.clone()),
-      cnswap: stat_parse_num!(split.next(), read_error.clone()),
+      ppid: stat_parse_num!(split.next(), parse_error),
+      pgrp: stat_parse_num!(split.next(), parse_error),
+      session: stat_parse_num!(split.next(), parse_error),
+      tty_nr: stat_parse_num!(split.next(), parse_error),
+      tpgid: stat_parse_num!(split.next(), parse_error),
+      flags: stat_parse_num!(split.next(), parse_error),
+      minflt: stat_parse_num!(split.next(), parse_error),
+      cminflt: stat_parse_num!(split.next(), parse_error),
+      majflt: stat_parse_num!(split.next(), parse_error),
+      cmajflt: stat_parse_num!(split.next(), parse_error),
+      utime: stat_parse_num!(split.next(), parse_error),
+      stime: stat_parse_num!(split.next(), parse_error),
+      cutime: stat_parse_num!(split.next(), parse_error),
+      cstime: stat_parse_num!(split.next(), parse_error),
+      priority: stat_parse_num!(split.next(), parse_error),
+      nice: stat_parse_num!(split.next(), parse_error),
+      num_threads: stat_parse_num!(split.next(), parse_error),
+      itrealvalue: stat_parse_num!(split.next(), parse_error),
+      starttime: stat_parse_num!(split.next(), parse_error),
+      vsize: stat_parse_num!(split.next(), parse_error),
+      rss: stat_parse_num!(split.next(), parse_error),
+      rsslim: stat_parse_num!(split.next(), parse_error),
+      startcode: stat_parse_num!(split.next(), parse_error),
+      endcode: stat_parse_num!(split.next(), parse_error),
+      startstack: stat_parse_num!(split.next(), parse_error),
+      kstkesp: stat_parse_num!(split.next(), parse_error),
+      kstkeip: stat_parse_num!(split.next(), parse_error),
+      signal: stat_parse_num!(split.next(), parse_error),
+      blocked: stat_parse_num!(split.next(), parse_error),
+      sigignore: stat_parse_num!(split.next(), parse_error),
+      sigcatch: stat_parse_num!(split.next(), parse_error),
+      wchan: stat_parse_num!(split.next(), parse_error),
+      nswap: stat_parse_num!(split.next(), parse_error),
+      cnswap: stat_parse_num!(split.next(), parse_error),
       exit_signal:
         stat_parse_opt_num!(split.next()),
       processor:
@@ -407,28 +421,35 @@ pub struct ProcStatus {
 }
 
 macro_rules! extract_key {
-  ($map:expr, $key:expr, $func:expr) =>
+  ($map:expr, $key:expr, $err:expr, $func:expr) =>
     (try!(
       $map.remove($key)
-        .ok_or(format!("Key '{}' not found", $key))
-        .and_then($func)
+        .ok_or($err.clone())
+        .and_then(|o|
+          $func(o)
+          .map_err(|e|
+            ProcHardError(ProcParseError, ProcPartStatus, e)
+          )
+        )
     ))
 }
 
 impl ProcStatus {
   // Generate ProcStatus struct given a process directory
-  fn new(proc_dir: &str) -> Result<Self, String> {
+  fn new(proc_dir: &str) -> Result<Self, ProcError> {
     // Try opening file
     let status_file = try!(
       File::open(Path::new(proc_dir).join("status"))
-        .map_err(err_str)
+        .map_err(|e|
+          ProcSoftError(ProcReadError, ProcPartStatus, e.to_string()))
     );
 
     let mut status: HashMap<String, String> =
       BufReader::new(status_file).lines().filter_map(
         |line|
           line
-            .map_err(err_str)
+            .map_err(|e|
+              ProcSoftError(ProcReadError, ProcPartStatus, e.to_string()))
             .and_then(|line| {
               let split = line.splitn(2, ':').collect::<Vec<&str>>();
 
@@ -436,18 +457,22 @@ impl ProcStatus {
                 (Some(key), Some(value)) =>
                   Ok((key.trim().to_owned(),
                      value.trim().to_owned())),
-                _ => Err("Error reading status line".to_owned())
+                _ => Err(ProcHardError(ProcParseError, ProcPartStatus,
+                           "Error reading status line".to_owned()))
               }
              }).ok()
       ).collect();
 
+    let parse_error = ProcHardError(ProcParseError,
+      ProcPartStatus, "Error reading from hashmap".to_owned());
+
     Ok(ProcStatus{
-      pid: extract_key!(status, "Pid", parse_taskid),
-      ppid: extract_key!(status, "PPid", parse_taskid),
-      tgid: extract_key!(status, "Tgid", parse_taskid),
-      name: extract_key!(status, "Name", |a| Ok(a)),
-      uid : extract_key!(status, "Uid", parse_uids),
-      gid : extract_key!(status, "Gid", parse_uids)
+      pid: extract_key!(status, "Pid", parse_error, parse_taskid),
+      ppid: extract_key!(status, "PPid", parse_error, parse_taskid),
+      tgid: extract_key!(status, "Tgid", parse_error, parse_taskid),
+      name: extract_key!(status, "Name", parse_error, |a| Ok(a)),
+      uid : extract_key!(status, "Uid", parse_error, parse_uids),
+      gid : extract_key!(status, "Gid", parse_error, parse_uids)
     })
   }
 }
@@ -507,7 +532,11 @@ impl ProcIter {
       Ok(pid) => {
         let proc_s_r = Proc::new(pid);
         if proc_s_r.is_err() {
-          return Some(proc_s_r);
+          if proc_s_r.as_ref().unwrap_err().is_hard() {
+            return Some(proc_s_r.map_err(err_str));
+          } else {
+            return None;
+          }
         }
         let proc_s = proc_s_r.unwrap();
         match proc_s.query(query) {
