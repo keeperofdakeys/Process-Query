@@ -1,6 +1,7 @@
 use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::fmt;
 use std::fs::{self, File, ReadDir, DirEntry};
 use std::path::Path;
 use std::collections::HashMap;
@@ -38,10 +39,77 @@ pub struct Proc {
   pub cmdline: Vec<String>
 }
 
+// Fields in a Proc
+enum ProcPart {
+  ProcPartStat,
+  ProcPartStatus,
+  ProcPartCmdline
+}
+
+impl fmt::Display for ProcPart {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}",
+      match *self {
+        ProcPart::ProcPartStat => "stat",
+        ProcPart::ProcPartStatus => "status",
+        ProcPart::ProcPartCmdline => "cmdline"
+      }
+    )
+  }
+}
+
+// Error types that can occur making a Proc
+enum ProcErrorType {
+  ProcParseError,
+  ProcReadError,
+}
+
+impl fmt::Display for ProcErrorType {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}",
+      match *self {
+        ProcErrorType::ProcParseError => "parsing the file",
+        ProcErrorType::ProcReadError => "reading the file"
+      }
+    )
+  }
+}
+
+// An error that occurs during parsing
+enum ProcError {
+  // A soft error means the proc has at least a valid status field
+  ProcSoftError(ProcErrorType, ProcPart, String),
+  // A hard error means that the proc has no status field
+  ProcHardError(ProcErrorType, ProcPart, String),
+}
+
+impl fmt::Display for ProcError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    let (e_type, part, error);
+    let diag = match *self {
+      ProcError::ProcHardError(ref t, ref p, ref s) => {
+        e_type = t;
+        part = p;
+        error = s;
+        "hard"
+      },
+      ProcError::ProcSoftError(ref t, ref p, ref s) => {
+        e_type = t;
+        part = p;
+        error = s;
+        "soft"
+      }
+    };
+    write!(f, "A '{}' error occured while '{}' the '{}' part: {}",
+      diag, e_type, part, error)
+  }
+}
+
 impl Proc {
   pub fn new(pid: TaskId) -> Result<Self, String> {
     let proc_dir = format!("/proc/{}", pid);
     let proc_stat = try!(ProcStat::new(&proc_dir));
+    // Once we have stat, we aren't too mindful if we miss the rest.
     let proc_status = try!(ProcStatus::new(&proc_dir));
     let cmdline = try!(Self::read_cmdline(&proc_dir));
 
