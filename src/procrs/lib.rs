@@ -42,6 +42,7 @@ pub struct Proc {
 use ProcPart::*;
 
 // Fields in a Proc
+#[derive(Clone)]
 enum ProcPart {
   ProcPartStat,
   ProcPartStatus,
@@ -63,6 +64,7 @@ impl fmt::Display for ProcPart {
 use ProcErrorType::*;
 
 // Error types that can occur making a Proc
+#[derive(Clone)]
 enum ProcErrorType {
   ProcParseError,
   ProcReadError,
@@ -82,6 +84,7 @@ impl fmt::Display for ProcErrorType {
 use ProcError::*;
 
 // An error that occurs during parsing
+#[derive(Clone)]
 enum ProcError {
   // A soft error is something that is temporary, or recoverable.
   // For example, trying to read a /proc file for an invalid pid.
@@ -116,7 +119,7 @@ impl fmt::Display for ProcError {
 impl Proc {
   pub fn new(pid: TaskId) -> Result<Self, String> {
     let proc_dir = format!("/proc/{}", pid);
-    let proc_stat = try!(ProcStat::new(&proc_dir));
+    let proc_stat = try!(ProcStat::new(&proc_dir).map_err(err_str));
     // Once we have stat, we aren't too mindful if we miss the rest.
     let proc_status = try!(ProcStatus::new(&proc_dir));
     let cmdline = try!(Self::read_cmdline(&proc_dir).map_err(err_str));
@@ -258,15 +261,16 @@ pub struct ProcStat {
   pub exit_code: Option<i32>
 }
 
-const READ_ERROR: &'static str = "Error parsing /proc/../stat file";
-
 macro_rules! stat_parse_num {
-  ($item:expr) =>
+  ($item:expr, $err: expr) =>
     (try!(
-      $item.ok_or(READ_ERROR.to_owned())
+      $item.ok_or($err)
       .and_then(|s|
          s.parse()
-         .map_err(err_str)
+           .map_err(|e: std::num::ParseIntError|
+             ProcHardError(ProcParseError,
+               ProcPartStat, e.to_string())
+           )
       )
     ))
 }
@@ -280,75 +284,82 @@ macro_rules! stat_parse_opt_num {
 
 impl ProcStat {
   // Generate ProcStat struct given a process directory
-  fn new(proc_dir: &str) -> Result<Self, String> {
+  fn new(proc_dir: &str) -> Result<Self, ProcError> {
     let file = try!(
       File::open(Path::new(proc_dir).join("stat"))
-        .map_err(err_str)
+        .map_err(|e|
+          ProcSoftError(ProcReadError, ProcPartStat, e.to_string()))
     );
     let bytes = try!(
       file.bytes().collect::<Result<Vec<_>, _>>()
-        .map_err(err_str)
+        .map_err(|e|
+          ProcSoftError(ProcReadError, ProcPartStat, e.to_string()))
         .and_then(|s|
           String::from_utf8(s)
-          .map_err(err_str)
+          .map_err(|e|
+            ProcSoftError(ProcParseError, ProcPartStat, e.to_string()))
         )
     );
     // /proc/.../stat is "numbers (prog_name) char numbers"
     // prog_name could have arbitrary characters, so we need to parse
     // the file from both ends
+    let read_error = ProcHardError(
+      ProcParseError, ProcPartStat,
+      "Error splitting file".to_owned()
+    );
     let mut bytes_split = bytes.splitn(2, '(');
-    let prefix = try!(bytes_split.next().ok_or(READ_ERROR.to_owned()));
+    let prefix = try!(bytes_split.next().ok_or(read_error.clone()));
     let mut bytes_split = bytes_split.next().unwrap().rsplitn(2, ')');
     // /proc/.../stat has a newline at the end
-    let suffix = try!(bytes_split.next().ok_or(READ_ERROR.to_owned())).trim();
-    let prog_name = try!(bytes_split.next().ok_or(READ_ERROR.to_owned()));
+    let suffix = try!(bytes_split.next().ok_or(read_error.clone())).trim();
+    let prog_name = try!(bytes_split.next().ok_or(read_error.clone()));
 
     let mut split = suffix.split(' ');
 
     Ok(ProcStat {
-      pid: stat_parse_num!(prefix.split(' ').next()),
+      pid: stat_parse_num!(prefix.split(' ').next(), read_error.clone()),
       // From here parse from back, since arbitrary data can be in program name
       comm: prog_name.to_owned(),
       state: try!(
         split.next()
           .and_then(|s|
             get_procstate(s)
-          ).ok_or(READ_ERROR.to_owned())
+          ).ok_or(read_error.clone())
       ),
-      ppid: stat_parse_num!(split.next()),
-      pgrp: stat_parse_num!(split.next()),
-      session: stat_parse_num!(split.next()),
-      tty_nr: stat_parse_num!(split.next()),
-      tpgid: stat_parse_num!(split.next()),
-      flags: stat_parse_num!(split.next()),
-      minflt: stat_parse_num!(split.next()),
-      cminflt: stat_parse_num!(split.next()),
-      majflt: stat_parse_num!(split.next()),
-      cmajflt: stat_parse_num!(split.next()),
-      utime: stat_parse_num!(split.next()),
-      stime: stat_parse_num!(split.next()),
-      cutime: stat_parse_num!(split.next()),
-      cstime: stat_parse_num!(split.next()),
-      priority: stat_parse_num!(split.next()),
-      nice: stat_parse_num!(split.next()),
-      num_threads: stat_parse_num!(split.next()),
-      itrealvalue: stat_parse_num!(split.next()),
-      starttime: stat_parse_num!(split.next()),
-      vsize: stat_parse_num!(split.next()),
-      rss: stat_parse_num!(split.next()),
-      rsslim: stat_parse_num!(split.next()),
-      startcode: stat_parse_num!(split.next()),
-      endcode: stat_parse_num!(split.next()),
-      startstack: stat_parse_num!(split.next()),
-      kstkesp: stat_parse_num!(split.next()),
-      kstkeip: stat_parse_num!(split.next()),
-      signal: stat_parse_num!(split.next()),
-      blocked: stat_parse_num!(split.next()),
-      sigignore: stat_parse_num!(split.next()),
-      sigcatch: stat_parse_num!(split.next()),
-      wchan: stat_parse_num!(split.next()),
-      nswap: stat_parse_num!(split.next()),
-      cnswap: stat_parse_num!(split.next()),
+      ppid: stat_parse_num!(split.next(), read_error.clone()),
+      pgrp: stat_parse_num!(split.next(), read_error.clone()),
+      session: stat_parse_num!(split.next(), read_error.clone()),
+      tty_nr: stat_parse_num!(split.next(), read_error.clone()),
+      tpgid: stat_parse_num!(split.next(), read_error.clone()),
+      flags: stat_parse_num!(split.next(), read_error.clone()),
+      minflt: stat_parse_num!(split.next(), read_error.clone()),
+      cminflt: stat_parse_num!(split.next(), read_error.clone()),
+      majflt: stat_parse_num!(split.next(), read_error.clone()),
+      cmajflt: stat_parse_num!(split.next(), read_error.clone()),
+      utime: stat_parse_num!(split.next(), read_error.clone()),
+      stime: stat_parse_num!(split.next(), read_error.clone()),
+      cutime: stat_parse_num!(split.next(), read_error.clone()),
+      cstime: stat_parse_num!(split.next(), read_error.clone()),
+      priority: stat_parse_num!(split.next(), read_error.clone()),
+      nice: stat_parse_num!(split.next(), read_error.clone()),
+      num_threads: stat_parse_num!(split.next(), read_error.clone()),
+      itrealvalue: stat_parse_num!(split.next(), read_error.clone()),
+      starttime: stat_parse_num!(split.next(), read_error.clone()),
+      vsize: stat_parse_num!(split.next(), read_error.clone()),
+      rss: stat_parse_num!(split.next(), read_error.clone()),
+      rsslim: stat_parse_num!(split.next(), read_error.clone()),
+      startcode: stat_parse_num!(split.next(), read_error.clone()),
+      endcode: stat_parse_num!(split.next(), read_error.clone()),
+      startstack: stat_parse_num!(split.next(), read_error.clone()),
+      kstkesp: stat_parse_num!(split.next(), read_error.clone()),
+      kstkeip: stat_parse_num!(split.next(), read_error.clone()),
+      signal: stat_parse_num!(split.next(), read_error.clone()),
+      blocked: stat_parse_num!(split.next(), read_error.clone()),
+      sigignore: stat_parse_num!(split.next(), read_error.clone()),
+      sigcatch: stat_parse_num!(split.next(), read_error.clone()),
+      wchan: stat_parse_num!(split.next(), read_error.clone()),
+      nswap: stat_parse_num!(split.next(), read_error.clone()),
+      cnswap: stat_parse_num!(split.next(), read_error.clone()),
       exit_signal:
         stat_parse_opt_num!(split.next()),
       processor:
