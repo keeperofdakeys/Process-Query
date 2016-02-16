@@ -6,7 +6,7 @@ use prettytable::Table;
 use prettytable::format::FormatBuilder;
 use std::env;
 use std::collections::HashMap;
-use procrs::*;
+use procrs::prc::*;
 
 fn main() {
   let prog_opts = match parse_args() {
