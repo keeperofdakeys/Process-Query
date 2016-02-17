@@ -1,7 +1,7 @@
 use std::fmt;
 
 // Fields in a Proc
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProcPart {
   ProcPartStat,
   ProcPartStatus,
@@ -21,7 +21,7 @@ impl fmt::Display for ProcPart {
 }
 
 // Error types that can occur making a Proc
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProcErrorType {
   ProcParseError,
   ProcReadError,
@@ -39,7 +39,7 @@ impl fmt::Display for ProcErrorType {
 }
 
 // An error that occurs during parsing
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProcError {
   // A soft error is something that is temporary, or recoverable.
   // For example, trying to read a /proc file for an invalid pid.
