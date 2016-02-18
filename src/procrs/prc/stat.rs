@@ -4,7 +4,7 @@ use std::io::Read;
 use super::error::*;
 use super::TaskId;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ProcStat {
   pub pid: TaskId,
   pub comm: String,
@@ -95,17 +95,20 @@ impl ProcStat {
           .or(Err(ProcSoftError(ProcParseError, ProcPartStat)))
         )
     );
-    Self::parse_bytes(bytes)
+    Self::parse_string(bytes)
   }
 
-  fn parse_bytes(bytes: String) -> Result<Self, ProcError> {
+  fn parse_string(bytes: String) -> Result<Self, ProcError> {
     // /proc/.../stat is "numbers (prog_name) char numbers"
     // prog_name could have arbitrary characters, so we need to parse
     // the file from both ends
     let read_error = ProcHardError(ProcParseError, ProcPartStat);
     let mut bytes_split = bytes.splitn(2, '(');
     let prefix = try!(bytes_split.next().ok_or(read_error.clone()));
-    let mut bytes_split = bytes_split.next().unwrap().rsplitn(2, ')');
+    let mut bytes_split = match bytes_split.next() {
+      Some(b) => b.rsplitn(2, ')'),
+      None => return Err(ProcHardError(ProcParseError, ProcPartStat))
+    };
     // /proc/.../stat has a newline at the end
     let suffix = try!(bytes_split.next().ok_or(read_error.clone())).trim();
     let prog_name = try!(bytes_split.next().ok_or(read_error.clone()));
@@ -190,7 +193,7 @@ impl ProcStat {
   }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ProcState {
   Running,
   Sleeping,
@@ -222,65 +225,116 @@ fn get_procstate(state: &str) -> Option<ProcState> {
 
 #[test]
 fn test_parsing() {
-  let sample_text = "14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  let test_prc = ProcStat{
+    pid: 14557,
+    comm: "psq".to_owned(),
+    state: ProcState::Stopped,
+    ppid: 14364,
+    pgrp: 14557,
+    session: 14364,
+    tty_nr: 34823,
+    tpgid: 14638,
+    flags: 1077952512,
+    minflt: 1178,
+    cminflt: 0,
+    majflt: 0,
+    cmajflt: 0,
+    utime: 16,
+    stime: 0,
+    cutime: 0,
+    cstime: 0,
+    priority: 20,
+    nice: 0,
+    num_threads: 1,
+    itrealvalue: 0,
+    starttime: 609164,
+    vsize: 23785472,
+    rss: 1707,
+    rsslim: 18446744073709551615,
+    startcode: 94178658361344,
+    endcode: 94178659818816,
+    startstack: 140735096462144,
+    kstkesp: 140735096450384,
+    kstkeip: 94178659203252,
+    signal: 0,
+    blocked: 0,
+    sigignore: 4224,
+    sigcatch: 1088,
+    wchan: 1,
+    nswap: 0,
+    cnswap: 0,
+    exit_signal: Some(17),
+    processor: Some(2),
+    rt_priority: Some(0),
+    policy: Some(0),
+    delayacct_blkio_ticks: Some(0),
+    guest_time: Some(0),
+    cguest_time: Some(0),
+    start_data: Some(94178661916280),
+    end_data: Some(94178661971297),
+    start_brk: Some(94178690334720),
+    arg_start: Some(140735096465030),
+    arg_end: Some(140735096465049),
+    env_start: Some(140735096465049),
+    env_end: Some(140735096467429),
+    exit_code: Some(0)
+  };
 
-  let sample_proc = ProcStat::parse_bytes(sample_text);
+  let input = "14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Ok(test_prc));
+}
 
-  assert_eq!(
-    sample_proc,
-    Ok(ProcStat{
-      pid: 14557,
-      comm: "psq".to_owned(),
-      state: ProcState::Stopped,
-      ppid: 14364,
-      pgrp: 14557,
-      session: 14364,
-      tty_nr: 34823,
-      tpgid: 14638,
-      flags: 1077952512,
-      minflt: 1178,
-      cminflt: 0,
-      majflt: 0,
-      cmajflt: 0,
-      utime: 16,
-      stime: 0,
-      cutime: 0,
-      cstime: 0,
-      priority: 20,
-      nice: 0,
-      num_threads: 1,
-      itrealvalue: 0,
-      starttime: 609164,
-      vsize: 23785472,
-      rss: 1707,
-      rsslim: 18446744073709551615,
-      startcode: 94178658361344,
-      endcode: 94178659818816,
-      startstack: 140735096462144,
-      kstkesp: 140735096450384,
-      kstkeip: 94178659203252,
-      signal: 0,
-      blocked: 0,
-      sigignore: 4224,
-      sigcatch: 1088,
-      wchan: 1,
-      nswap: 0,
-      cnswap: 0,
-      exit_signal: Some(17),
-      processor: Some(2),
-      rt_priority: Some(0),
-      policy: Some(0),
-      delayacct_blkio_ticks: Some(0),
-      guest_time: Some(0),
-      cguest_time: Some(0),
-      start_data: Some(94178661916280),
-      end_data: Some(94178661971297),
-      start_brk: Some(94178690334720),
-      arg_start: Some(140735096465030),
-      arg_end: Some(140735096465049),
-      env_start: Some(140735096465049),
-      env_end: Some(140735096467429),
-      exit_code: Some(0)
-    })
-  );
+// For each of the following tests, the previous text input is used to create a ProcStat struct.
+
+#[test]
+fn test_state_running() {
+  let mut prc = ProcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = ProcState::Running;
+  let input = "14557 (psq) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Ok(prc));
+}
+
+#[test]
+fn test_comm_space() {
+  let mut prc = ProcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = ProcState::Running;
+  prc.comm = "psq ".to_owned();
+  let input = "14557 (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Ok(prc));
+}
+
+#[test]
+fn test_double_space() {
+  let mut prc = ProcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = ProcState::Running;
+  prc.comm = "psq ".to_owned();
+  let input = "14557  (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Ok(prc));
+}
+
+#[test]
+fn test_comm_parens() {
+  let mut prc = ProcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = ProcState::Running;
+  prc.comm = " ) (psq ".to_owned();
+  let input = "14557  ( ) (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Ok(prc));
+}
+
+#[test]
+fn test_invalid_parens() {
+  let input = "14557   ) (psq (R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
+}
+
+#[test]
+fn test_invalid_1() {
+  let input = "14557 ".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
+}
+
+#[test]
+fn test_invalid_2() {
+  let input = "14557 (a) 3".to_owned();
+  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
 }
