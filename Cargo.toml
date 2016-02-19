@@ -5,7 +5,8 @@ authors = ["Josh Driver <keeperofdakeys@gmail.com>"]
 
 [dependencies]
 getopts = "0.2"
-prettytable-rs = "^0.6"
+prettytable-rs = "0.6"
+argparse = "0.2"
 
 [[bin]]
 name="psq"

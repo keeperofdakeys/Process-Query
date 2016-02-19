@@ -4,6 +4,7 @@ use std::fs::{self, File, ReadDir, DirEntry};
 use std::path::Path;
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::str::FromStr;
 
 mod stat;
 mod status;
@@ -188,28 +189,38 @@ pub enum ProcQuery {
   NoneQuery
 }
 
-pub fn create_query(query: &str) -> Result<ProcQuery, String> {
-  let splits: Vec<_> = query.splitn(2, '=').collect();
+impl ProcQuery {
+  fn create_query(query: &str) -> Result<ProcQuery, String> {
+    let splits: Vec<_> = query.splitn(2, '=').collect();
 
-  match splits.len() {
-    0 => Ok(ProcQuery::NoneQuery),
-    1 => Ok(match query.parse().ok() {
-      Some(tid) => ProcQuery::PidQuery(tid),
-      None => ProcQuery::NameQuery(query.to_owned())
-    }),
-    _ => {
-      let q_text = splits[1].to_owned();
-      let q_tid = q_text.parse();
-      match &*splits[0].to_lowercase() {
-        "pid" => q_tid.map(|q| ProcQuery::PidQuery(q))
-          .or(Err("Query value for type 'pid' not valid".to_owned())),
-        "ppid" => q_tid.map(|q| ProcQuery::PpidQuery(q))
-          .or(Err("Query value for type 'ppid' not valid".to_owned())),
-        "name" => Ok(ProcQuery::NameQuery(q_text)),
-        "cmdline" => Ok(ProcQuery::CmdlineQuery(q_text)),
-        _ => Err("Invalid query type".to_owned())
+    match splits.len() {
+      0 => Ok(ProcQuery::NoneQuery),
+      1 => Ok(match query.parse().ok() {
+        Some(tid) => ProcQuery::PidQuery(tid),
+        None => ProcQuery::NameQuery(query.to_owned())
+      }),
+      _ => {
+        let q_text = splits[1].to_owned();
+        let q_tid = q_text.parse();
+        match &*splits[0].to_lowercase() {
+          "pid" => q_tid.map(|q| ProcQuery::PidQuery(q))
+            .or(Err("Query value for type 'pid' not valid".to_owned())),
+          "ppid" => q_tid.map(|q| ProcQuery::PpidQuery(q))
+            .or(Err("Query value for type 'ppid' not valid".to_owned())),
+          "name" => Ok(ProcQuery::NameQuery(q_text)),
+          "cmdline" => Ok(ProcQuery::CmdlineQuery(q_text)),
+          _ => Err("Invalid query type".to_owned())
+        }
       }
     }
+  }
+}
+
+impl FromStr for ProcQuery {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    Self::create_query(s)
   }
 }
 

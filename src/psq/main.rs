@@ -1,26 +1,18 @@
-extern crate getopts;
 extern crate procrs;
+extern crate argparse;
 #[macro_use] extern crate prettytable;
-use getopts::Options;
 use prettytable::Table;
 use prettytable::format::FormatBuilder;
-use std::env;
 use std::collections::HashMap;
 use procrs::prc::*;
+use argparse::{ArgumentParser, StoreTrue, Store};
 
 fn main() {
-  let prog_opts = match parse_args() {
-    Some(t) => { t }
-    None => { return; }
-  };
-  let proc_query = match prog_opts.query {
-    Some(ref q_text) => create_query(&q_text).unwrap(),
-    None => ProcQuery::NoneQuery
-  };
-  match prog_opts.tree {
-    false => {
+  let opts = parse_args();
+  match opts {
+    ProgOpts{ tree: false, query: q, .. } => {
       let mut table = Table::init(
-        ProcIter::new_query(proc_query).unwrap()
+        ProcIter::new_query(q).unwrap()
           .map(|p_r|
             p_r.map(|p|
               row![p.stat.pid, p.stat.ppid, p.stat.comm, p.cmdline.join(" ")]
@@ -36,7 +28,7 @@ fn main() {
       table.printstd();
     },
 
-    true => {
+    ProgOpts{ tree: true, query: q, .. } => {
       let proc_map: HashMap<_, _> =
         ProcIter::new().unwrap()
         .map(|p_r|
@@ -57,7 +49,10 @@ fn main() {
           .push(proc_struct);
       }
       proc_list.sort();
-      let pid = prog_opts.query.and_then(|p| p.parse().ok()).unwrap_or(1);;
+      let pid = match q {
+        ProcQuery::PidQuery(p) => p,
+        _ => 1
+      };
       let mut pid_procs = Vec::new();
 
       let start_procs = match proc_map.get(&pid) {
@@ -89,40 +84,29 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
 }
 
 struct ProgOpts {
-  query: Option<String>,
-  tree: bool
+  query: ProcQuery,
+  tree: bool,
+  verbose: bool
 }
 
-fn parse_args() -> Option<ProgOpts> {
-  let args: Vec<String> = env::args().collect();
-  let program = args[0].clone();
-  let mut prog_opts = ProgOpts{
-    query: None,
-    tree: false
+fn parse_args() -> ProgOpts {
+  let mut opts = ProgOpts {
+    query: ProcQuery::NoneQuery,
+    tree: false,
+    verbose: false
   };
 
-  let mut opts = Options::new();
-  opts.optflag("h", "help", "Print help");
-  opts.optflag("t", "tree", "Print tree");
-
-  let matches = match opts.parse(&args[1..]) {
-    Ok(m) => {m}
-    Err(f) => { panic!(f.to_string()) }
-  };
-  if matches.opt_present("h") {
-    print_usage(&program, opts);
-    return None;
+  {
+    let mut ap = ArgumentParser::new();
+    ap.set_description("Query linux processes");
+    ap.refer(&mut opts.tree)
+      .add_option(&["-t", "--tree"], StoreTrue, "Display process tree");
+    ap.refer(&mut opts.verbose)
+      .add_option(&["-v", "--verbose"], StoreTrue, "Verbose output");
+    ap.refer(&mut opts.query)
+      .add_argument("query", Store, "Optional query to search by, pid or string");
+    ap.parse_args_or_exit();
   }
-  if matches.opt_present("t") {
-    prog_opts.tree = true;
-  }
-  if !matches.free.is_empty() {
-    prog_opts.query = Some(matches.free[0].clone());
-  };
-  Some(prog_opts)
-}
 
-fn print_usage(program: &str, opts: Options) {
-  let brief = format!("Usage: {} query [options]", program);
-  print!("{}", opts.usage(&brief));
+  opts
 }
