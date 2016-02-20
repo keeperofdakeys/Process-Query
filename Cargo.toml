@@ -2,6 +2,10 @@
 name = "procrs"
 version = "0.2.0"
 authors = ["Josh Driver <keeperofdakeys@gmail.com>"]
+description = "Linux process query command and library"
+repository = "https://github.com/keeperofdakeys/Process-Query"
+readme = "README.md"
+
 
 [dependencies]
 getopts = "0.2"
