@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
-use std::collections::HashMap;
 use super::error::*;
 use super::TaskId;
 
@@ -17,15 +16,21 @@ pub struct ProcStatus {
   pub gid: (u32, u32, u32, u32)
 }
 
-macro_rules! extract_key {
-  ($map:expr, $key:expr, $func:expr) =>
+macro_rules! extract_line {
+  ($iter:expr, $key:expr, $func:expr) =>
     (try!(
-      $map.remove($key)
-        .and_then(|o|
-          $func(o)
-        )
-        .ok_or(ProcHardError(ProcParseError, ProcPartStatus))
-    ))
+      match $iter.find(|r| {
+          match *r {
+            Ok((ref k, _)) if k == $key => true,
+            Err(_) => true,
+            _ => false
+          }
+      }) {
+        Some(Ok((_, v))) => Ok($func(v)),
+        Some(Err(e)) => Err(e),
+        None => Err(ProcHardError(ProcParseError, ProcPartStatus))
+      }
+    ).unwrap())
 }
 
 impl ProcStatus {
@@ -37,30 +42,44 @@ impl ProcStatus {
         .or(Err(ProcSoftError(ProcReadError, ProcPartStatus)))
     );
 
-    let mut status: HashMap<String, String> =
-      BufReader::new(status_file).lines().filter_map(
-        |line|
-          line
-            .or(Err(ProcSoftError(ProcReadError, ProcPartStatus)))
-            .and_then(|line| {
-              let split = line.splitn(2, ':').collect::<Vec<&str>>();
+    let lines =
+      BufReader::new(status_file)
+        .lines()
+        .map(|r|
+          match r {
+            Ok(o) => Ok(o),
+            Err(_) => Err(ProcSoftError(ProcReadError, ProcPartStatus))
+          }
+        );
+    Self::parse_string(lines)
+  }
 
-              match (split.get(0), split.get(1)) {
-                (Some(key), Some(value)) =>
-                  Ok((key.trim().to_owned(),
-                     value.trim().to_owned())),
-                _ => Err(ProcHardError(ProcParseError, ProcPartStatus))
-              }
-             }).ok()
-      ).collect();
+  fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines: I) -> Result<Self, ProcError> {
+    let mut status = lines
+      .map(|r|
+        match r {
+          Ok(line) => {
+            let split = line.splitn(2, ':').collect::<Vec<&str>>();
+            match (split.get(0), split.get(1)) {
+              (Some(key), Some(value)) =>
+                Ok((key.trim().to_owned(),
+                   value.trim().to_owned())),
+              _ => Err(ProcHardError(ProcParseError, ProcPartStatus))
+            }
+          },
+          Err(_) => Err(ProcSoftError(ProcReadError, ProcPartStatus))
+        }
+      );
 
+    // It's quite important that these appear in the order that they
+    // appear in the status file
     Ok(ProcStatus{
-      pid: extract_key!(status, "Pid", parse_taskid),
-      ppid: extract_key!(status, "PPid", parse_taskid),
-      tgid: extract_key!(status, "Tgid", parse_taskid),
-      name: extract_key!(status, "Name", |a| Some(a)),
-      uid : extract_key!(status, "Uid", parse_uids),
-      gid : extract_key!(status, "Gid", parse_uids)
+      name: extract_line!(status, "Name", |a| Some(a)),
+      tgid: extract_line!(status, "Tgid", parse_taskid),
+      pid: extract_line!(status, "Pid", parse_taskid),
+      ppid: extract_line!(status, "PPid", parse_taskid),
+      uid : extract_line!(status, "Uid", parse_uids),
+      gid : extract_line!(status, "Gid", parse_uids)
     })
   }
 }
