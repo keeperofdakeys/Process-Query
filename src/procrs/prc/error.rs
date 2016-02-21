@@ -1,84 +1,83 @@
 use std::fmt;
+use std::io;
+use std::io::Write;
 
-// Fields in a Proc
-#[derive(Clone, Debug, PartialEq)]
-pub enum ProcPart {
-  ProcPartStat,
-  ProcPartStatus,
-  ProcPartCmdline
+#[derive(PartialEq)]
+// An enum representing files in a /proc/pid/ dir
+pub enum PrcFile {
+  PrcDir,
+  PrcStat,
+  PrcStatus,
+  PrcCmdline
 }
 
-impl fmt::Display for ProcPart {
+impl fmt::Debug for PrcFile {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}",
-      match *self {
-        ProcPartStat => "stat",
-        ProcPartStatus => "status",
-        ProcPartCmdline => "cmdline"
-      }
-    )
-  }
-}
-
-// Error types that can occur making a Proc
-#[derive(Clone, Debug, PartialEq)]
-pub enum ProcErrorType {
-  ProcParseError,
-  ProcReadError,
-}
-
-impl fmt::Display for ProcErrorType {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}",
-      match *self {
-        ProcParseError => "parsing the file",
-        ProcReadError => "reading the file"
-      }
-    )
-  }
-}
-
-// An error that occurs during parsing
-#[derive(Clone, Debug, PartialEq)]
-pub enum ProcError {
-  // A soft error is something that is temporary, or recoverable.
-  // For example, trying to read a /proc file for an invalid pid.
-  ProcSoftError(ProcErrorType, ProcPart),
-  // A hard error is something that is unrecoverable.
-  // For example, a missing /proc, or a parsing error.
-  ProcHardError(ProcErrorType, ProcPart),
-}
-
-impl ProcError {
-  pub fn is_hard(&self) -> bool {
-    return match *self {
-      ProcHardError(..) => true,
-      ProcSoftError(..) => false
+    match *self {
+      PrcFile::PrcDir => write!(f, "Process Directory"),
+      PrcFile::PrcStat => write!(f, "Process Stat File"),
+      PrcFile::PrcStatus => write!(f, "Process Status File"),
+      PrcFile::PrcCmdline => write!(f, "Process Cmdline File")
     }
   }
 }
 
-impl fmt::Display for ProcError {
+impl fmt::Display for PrcFile {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    let (e_type, part);
-    let diag = match *self {
-      ProcError::ProcHardError(ref t, ref p) => {
-        e_type = t;
-        part = p;
-        "hard"
-      },
-      ProcError::ProcSoftError(ref t, ref p) => {
-        e_type = t;
-        part = p;
-        "soft"
-      }
-    };
-    write!(f, "A '{}' error occured while '{}' the '{}' part.",
-      diag, e_type, part)
+    fmt::Debug::fmt(self, f)
   }
 }
 
-// Export enum variants
-pub use self::ProcError::*;
-pub use self::ProcErrorType::*;
-pub use self::ProcPart::*;
+// An error that occurs while creating a process Prc
+pub enum PrcError {
+  // Error opening a file/dir
+  Opening(PrcFile, io::Error),
+  // Error reading a file/dir
+  Reading(PrcFile, io::Error),
+  // 
+  Parsing(PrcFile, &'static str),
+  Field(PrcFile, &'static str)
+}
+
+impl PrcError {
+  pub fn is_hard(&self) -> bool {
+    return match *self {
+      PrcError::Opening(_, _) => false,
+      PrcError::Reading(_, _) => false,
+      _ => true
+    }
+  }
+}
+
+impl fmt::Debug for PrcError {
+  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    match *self {
+      PrcError::Opening(ref f, ref e) => write!(fmt, "An error occured opening a {}: {}", f, e),
+      PrcError::Reading(ref f, ref e) => write!(fmt, "An error occured reading a {}: {}", f, e),
+      PrcError::Parsing(ref f, ref e) => write!(fmt, "An error occured parsing a {}: {}", f, e),
+      PrcError::Field(ref f, ref e) => write!(fmt, "An error occured parsing a field in a {}: {}", f, e)
+    }
+  }
+}
+
+impl fmt::Display for PrcError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fmt::Debug::fmt(self, f)
+  }
+}
+
+impl PartialEq for PrcError {
+  fn eq(&self, other: &Self) -> bool {
+    match (self, other) {
+      (&PrcError::Opening(ref f1, _), &PrcError::Opening(ref f2, _))
+        if f1 == f2 => true,
+      (&PrcError::Reading(ref f1, _), &PrcError::Reading(ref f2, _))
+        if f1 == f2 => true,
+      (&PrcError::Parsing(ref f1, ref e1), &PrcError::Parsing(ref f2, ref e2))
+        if f1 == f2 && e1 == e2 => true,
+      (&PrcError::Field(ref f1, ref e1), &PrcError::Field(ref f2, ref e2))
+        if f1 == f2 && e1 == e2 => true,
+      _ => false
+    }
+  }
+}

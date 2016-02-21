@@ -12,7 +12,7 @@ pub mod error;
 
 use self::stat::ProcStat;
 use self::status::ProcStatus;
-use self::error::*;
+use self::error::{PrcError, PrcFile};
 
 pub type TaskId = i32;
 pub type MemSize = u64;
@@ -29,7 +29,7 @@ pub struct Proc {
 }
 
 impl Proc {
-  pub fn new(pid: TaskId) -> Result<Self, ProcError> {
+  pub fn new(pid: TaskId) -> Result<Self, PrcError> {
     let proc_dir = format!("/proc/{}", pid);
     let proc_stat = try!(ProcStat::new(&proc_dir));
     let proc_status = try!(ProcStatus::new(&proc_dir));
@@ -44,14 +44,14 @@ impl Proc {
     Ok(proc_struct)
   }
 
-  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, ProcError> {
+  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, PrcError> {
     File::open(Path::new(proc_dir).join("cmdline"))
-      .or(Err(ProcSoftError(ProcReadError, ProcPartCmdline)))
+      .map_err(|e| PrcError::Opening(PrcFile::PrcCmdline, e))
       .and_then(|mut file| {
         let mut contents = Vec::new();
         try!(
           file.read_to_end(&mut contents)
-            .or(Err(ProcSoftError(ProcReadError, ProcPartCmdline)))
+            .map_err(|e| PrcError::Reading(PrcFile::PrcCmdline, e))
         );
         if contents.ends_with(&['\0' as u8]) {
           let _ = contents.pop();
@@ -59,7 +59,7 @@ impl Proc {
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
-          .or(Err(ProcSoftError(ProcParseError, ProcPartCmdline)))
+          .or(Err(PrcError::Parsing(PrcFile::PrcCmdline, "parsing utf8")))
       }).map(|contents|
         contents
           .split('\0')

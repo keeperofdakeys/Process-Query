@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 use std::io::Read;
-use super::error::*;
+use super::error::{PrcError, PrcFile};
 use super::TaskId;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -65,10 +65,10 @@ macro_rules! stat_parse_num {
   ($item:expr) =>
     (try!(
       $item.ok_or(
-        ProcHardError(ProcParseError, ProcPartStat)
+        PrcError::Parsing(PrcFile::PrcStat, "missing field")
       ).and_then(|s|
          s.parse()
-           .or(Err(ProcHardError(ProcParseError, ProcPartStat)))
+           .or(Err(PrcError::Parsing(PrcFile::PrcStat, "parsing number")))
       )
     ))
 }
@@ -82,37 +82,38 @@ macro_rules! stat_parse_opt_num {
 
 impl ProcStat {
   // Generate ProcStat struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
+  pub fn new(proc_dir: &str) -> Result<Self, PrcError> {
     let file = try!(
       File::open(Path::new(proc_dir).join("stat"))
-        .or(Err(ProcSoftError(ProcReadError, ProcPartStat)))
+        .map_err(|e| PrcError::Opening(PrcFile::PrcStat, e))
     );
     let bytes = try!(
       file.bytes().collect::<Result<Vec<_>, _>>()
-        .or(Err(ProcSoftError(ProcReadError, ProcPartStat)))
+        .map_err(|e| PrcError::Reading(PrcFile::PrcStat, e))
         .and_then(|s|
           String::from_utf8(s)
-          .or(Err(ProcSoftError(ProcParseError, ProcPartStat)))
+          .or(Err(PrcError::Parsing(PrcFile::PrcStat, "converting to utf8")))
         )
     );
     Self::parse_string(bytes)
   }
 
-  fn parse_string(bytes: String) -> Result<Self, ProcError> {
+  fn parse_string(bytes: String) -> Result<Self, PrcError> {
     // /proc/.../stat is "numbers (prog_name) char numbers"
     // prog_name could have arbitrary characters, so we need to parse
     // the file from both ends
-    let read_error = ProcHardError(ProcParseError, ProcPartStat);
     let mut bytes_split = bytes.splitn(2, '(');
-    let prefix = try!(bytes_split.next().ok_or(read_error.clone()));
+    let prefix = try!(bytes_split.next()
+      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "finding opening paren")));
     let mut bytes_split = match bytes_split.next() {
       Some(b) => b.rsplitn(2, ')'),
-      None => return Err(ProcHardError(ProcParseError, ProcPartStat))
+      None => return Err(PrcError::Parsing(PrcFile::PrcStat, "finding closing paren"))
     };
     // /proc/.../stat has a newline at the end
-    let suffix = try!(bytes_split.next().ok_or(read_error.clone())).trim();
-    let prog_name = try!(bytes_split.next().ok_or(read_error.clone()));
-
+    let suffix = try!(bytes_split.next()
+      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "splitting file"))).trim();
+    let prog_name = try!(bytes_split.next()
+      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "splitting comm")));
     let mut split = suffix.split(' ');
 
     Ok(ProcStat {
@@ -123,7 +124,7 @@ impl ProcStat {
         split.next()
           .and_then(|s|
             get_procstate(s)
-          ).ok_or(ProcHardError(ProcParseError, ProcPartStat))
+          ).ok_or(PrcError::Parsing(PrcFile::PrcStat, "parsing process state"))
       ),
       ppid: stat_parse_num!(split.next()),
       pgrp: stat_parse_num!(split.next()),
@@ -324,17 +325,17 @@ fn test_comm_parens() {
 #[test]
 fn test_invalid_parens() {
   let input = "14557   ) (psq (R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
+  assert_eq!(ProcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "splitting comm")));
 }
 
 #[test]
 fn test_invalid_1() {
   let input = "14557 ".to_owned();
-  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
+  assert_eq!(ProcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "finding closing paren")));
 }
 
 #[test]
 fn test_invalid_2() {
   let input = "14557 (a) 3".to_owned();
-  assert_eq!(ProcStat::parse_string(input), Err(ProcHardError(ProcParseError, ProcPartStat)));
+  assert_eq!(ProcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "parsing process state")));
 }

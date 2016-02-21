@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::collections::HashMap;
-use super::error::*;
+use super::error::{PrcError, PrcFile};
 use super::{TaskId, MemSize};
 
 #[derive(Debug)]
@@ -44,17 +44,17 @@ macro_rules! extract_line {
   ($map:expr, $key:expr, $func:expr) =>
     (try!(
       extract_line_opt!($map, $key, $func)
-        .ok_or(ProcHardError(ProcParseError, ProcPartStatus))
+        .ok_or(PrcError::Field(PrcFile::PrcStat, $key))
     ))
 }
 
 impl ProcStatus {
   // Generate ProcStatus struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
+  pub fn new(proc_dir: &str) -> Result<Self, PrcError> {
     // Try opening file
     let status_file = try!(
       File::open(Path::new(proc_dir).join("status"))
-        .or(Err(ProcSoftError(ProcReadError, ProcPartStatus)))
+        .map_err(|e| PrcError::Opening(PrcFile::PrcStatus, e))
     );
 
     let lines =
@@ -63,13 +63,13 @@ impl ProcStatus {
         .map(|r|
           match r {
             Ok(o) => Ok(o),
-            Err(_) => Err(ProcSoftError(ProcReadError, ProcPartStatus))
+            Err(e) => Err(PrcError::Reading(PrcFile::PrcStatus, e))
           }
         );
     Self::parse_string(lines)
   }
 
-  fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines: I) -> Result<Self, ProcError> {
+  fn parse_string<I: Iterator<Item=Result<String, PrcError>>>(lines: I) -> Result<Self, PrcError> {
     let mut status: HashMap<_, _> = 
       try!(
         lines.map(|r|
@@ -80,10 +80,10 @@ impl ProcStatus {
                 (Some(key), Some(value)) =>
                   Ok((key.trim().to_owned(),
                      value.trim().to_owned())),
-                _ => Err(ProcHardError(ProcParseError, ProcPartStatus))
+                _ => Err(PrcError::Parsing(PrcFile::PrcStatus, "No colon on line"))
               }
             },
-            Err(_) => Err(ProcSoftError(ProcReadError, ProcPartStatus))
+            Err(e) => Err(e)
           }
         ).collect::<Result<_, _>>());
 

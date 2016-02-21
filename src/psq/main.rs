@@ -1,6 +1,7 @@
 extern crate procrs;
 extern crate argparse;
-#[macro_use] extern crate prettytable;
+#[macro_use]
+extern crate prettytable;
 use prettytable::Table;
 use prettytable::format::FormatBuilder;
 use std::collections::HashMap;
