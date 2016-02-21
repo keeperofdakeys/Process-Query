@@ -15,6 +15,7 @@ use self::status::ProcStatus;
 use self::error::*;
 
 pub type TaskId = i32;
+pub type MemSize = u64;
 
 fn err_str<T: ToString>(err: T) -> String {
   err.to_string()
