@@ -2,6 +2,7 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::{self, File, ReadDir, DirEntry};
 use std::path::Path;
+use std::io::BufReader;
 use std::collections::HashMap;
 use std::cmp::Ordering;
 use std::str::FromStr;
@@ -47,10 +48,11 @@ impl Proc {
   fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, PrcError> {
     File::open(Path::new(proc_dir).join("cmdline"))
       .map_err(|e| PrcError::Opening(PrcFile::PrcCmdline, e))
-      .and_then(|mut file| {
+      .and_then(|file| {
         let mut contents = Vec::new();
         try!(
-          file.read_to_end(&mut contents)
+          BufReader::new(file)
+            .read_to_end(&mut contents)
             .map_err(|e| PrcError::Reading(PrcFile::PrcCmdline, e))
         );
         if contents.ends_with(&['\0' as u8]) {

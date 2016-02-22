@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::path::Path;
-use std::io::Read;
+use std::io::{Read, BufReader};
 use super::error::{PrcError, PrcFile};
 use super::TaskId;
 
@@ -87,13 +87,13 @@ impl ProcStat {
       File::open(Path::new(proc_dir).join("stat"))
         .map_err(|e| PrcError::Opening(PrcFile::PrcStat, e))
     );
-    let bytes = try!(
-      file.bytes().collect::<Result<Vec<_>, _>>()
-        .map_err(|e| PrcError::Reading(PrcFile::PrcStat, e))
-        .and_then(|s|
-          String::from_utf8(s)
-          .or(Err(PrcError::Parsing(PrcFile::PrcStat, "converting to utf8")))
-        )
+    let bytes = try!(BufReader::new(file)
+      .bytes().collect::<Result<Vec<_>, _>>()
+      .map_err(|e| PrcError::Reading(PrcFile::PrcStat, e))
+      .and_then(|s|
+        String::from_utf8(s)
+        .or(Err(PrcError::Parsing(PrcFile::PrcStat, "converting to utf8")))
+      )
     );
     Self::parse_string(bytes)
   }
