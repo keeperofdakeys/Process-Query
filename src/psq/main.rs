@@ -11,7 +11,8 @@ use argparse::{ArgumentParser, StoreTrue, Store};
 fn main() {
   let opts = parse_args();
   match opts {
-    ProgOpts{ tree: false, query: q, .. } => {
+    ProgOpts{ tree: false, query: q,
+              perf: perf, long: long, .. } => {
       let mut table = Table::init(
         ProcIter::new_query(q).unwrap()
           .map(|p_r|
@@ -87,6 +88,8 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
 struct ProgOpts {
   query: ProcQuery,
   tree: bool,
+  perf: bool,
+  long: bool,
   verbose: bool
 }
 
@@ -94,6 +97,8 @@ fn parse_args() -> ProgOpts {
   let mut opts = ProgOpts {
     query: ProcQuery::NoneQuery,
     tree: false,
+    perf: false,
+    long: false,
     verbose: false
   };
 
@@ -102,6 +107,10 @@ fn parse_args() -> ProgOpts {
     ap.set_description("Query linux processes");
     ap.refer(&mut opts.tree)
       .add_option(&["-t", "--tree"], StoreTrue, "Display process tree");
+    ap.refer(&mut opts.perf)
+      .add_option(&["-p", "--perf"], StoreTrue, "Display performance information");
+    ap.refer(&mut opts.long)
+      .add_option(&["-l", "--long"], StoreTrue, "Display more information");
     ap.refer(&mut opts.verbose)
       .add_option(&["-v", "--verbose"], StoreTrue, "Verbose output");
     ap.refer(&mut opts.query)
