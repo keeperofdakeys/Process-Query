@@ -11,8 +11,8 @@ mod stat;
 mod status;
 pub mod error;
 
-use self::stat::ProcStat;
-use self::status::ProcStatus;
+use self::stat::PrcStat;
+use self::status::PrcStatus;
 use self::error::{PrcError, PrcFile};
 
 pub type TaskId = i32;
@@ -23,20 +23,20 @@ fn err_str<T: ToString>(err: T) -> String {
 }
 
 #[derive(Debug)]
-pub struct Proc {
-  pub stat: Box<ProcStat>,
-  pub status: Box<ProcStatus>,
+pub struct Prc {
+  pub stat: Box<PrcStat>,
+  pub status: Box<PrcStatus>,
   pub cmdline: Vec<String>
 }
 
-impl Proc {
+impl Prc {
   pub fn new(pid: TaskId) -> Result<Self, PrcError> {
     let proc_dir = format!("/proc/{}", pid);
-    let proc_stat = try!(ProcStat::new(&proc_dir));
-    let proc_status = try!(ProcStatus::new(&proc_dir));
+    let proc_stat = try!(PrcStat::new(&proc_dir));
+    let proc_status = try!(PrcStatus::new(&proc_dir));
     let cmdline = try!(Self::read_cmdline(&proc_dir));
 
-    let proc_struct = Proc{
+    let proc_struct = Prc{
       stat: Box::new(proc_stat),
       status: Box::new(proc_status),
       cmdline: cmdline
@@ -71,56 +71,56 @@ impl Proc {
   }
 
   // Return true if query matches this process
-  fn query(&self, query: &ProcQuery) -> bool {
+  fn query(&self, query: &PrcQuery) -> bool {
     match *query {
-      ProcQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
-      ProcQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
-      ProcQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
-      ProcQuery::CmdlineQuery(ref q) => string_query(&self.cmdline.join(" "), &q),
-      ProcQuery::NoneQuery => true
+      PrcQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
+      PrcQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
+      PrcQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
+      PrcQuery::CmdlineQuery(ref q) => string_query(&self.cmdline.join(" "), &q),
+      PrcQuery::NoneQuery => true
     }
   }
 }
 
-impl PartialEq for Proc {
+impl PartialEq for Prc {
   fn eq(&self, other: &Self) -> bool {
     self.stat.pid.eq(&other.stat.pid)
   }
 }
 
-impl Eq for Proc {}
-impl PartialOrd for Proc {
+impl Eq for Prc {}
+impl PartialOrd for Prc {
   fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
     Some(self.cmp(other))
   }
 }
-impl Ord for Proc {
+impl Ord for Prc {
   fn cmp(&self, other: &Self) -> Ordering {
     self.stat.pid.cmp(&other.stat.pid)
   }
 }
 
-pub struct ProcIter {
+pub struct PrcIter {
   dir_iter: ReadDir,
-  query: ProcQuery
+  query: PrcQuery
 }
 
-impl ProcIter {
+impl PrcIter {
   pub fn new() -> Result<Self, String> {
-    Self::new_query(ProcQuery::NoneQuery)
+    Self::new_query(PrcQuery::NoneQuery)
   }
 
-  pub fn new_query(query: ProcQuery) -> Result<Self, String> {
+  pub fn new_query(query: PrcQuery) -> Result<Self, String> {
     let proc_dir = Path::new("/proc");
     let dir_iter = try!(fs::read_dir(proc_dir).map_err(err_str));
-    Ok(ProcIter{
+    Ok(PrcIter{
       dir_iter: dir_iter,
       query: query
     })
   }
 
-  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &ProcQuery)
-    -> Option<Result<Proc, String>> {
+  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &PrcQuery)
+    -> Option<Result<Prc, String>> {
     // TODO: This sucks, find a better way
     let file = entry_opt
       .map_err(err_str)
@@ -135,7 +135,7 @@ impl ProcIter {
 
     match file.unwrap().parse() {
       Ok(pid) => {
-        let proc_s_r = Proc::new(pid);
+        let proc_s_r = Prc::new(pid);
         if proc_s_r.is_err() {
           if proc_s_r.as_ref().unwrap_err().is_hard() {
             return Some(proc_s_r.map_err(err_str));
@@ -154,8 +154,8 @@ impl ProcIter {
   }
 }
 
-impl Iterator for ProcIter {
-  type Item = Result<Proc, String>;
+impl Iterator for PrcIter {
+  type Item = Result<Prc, String>;
 
   fn next(&mut self) -> Option<Self::Item> {
     for entry in self.dir_iter.by_ref() {
@@ -173,10 +173,10 @@ impl Iterator for ProcIter {
   }
 }
 
-pub type ProcMap = HashMap<TaskId, Proc>;
+pub type PrcMap = HashMap<TaskId, Prc>;
 
-pub fn get_proc_map() -> Result<ProcMap, String> {
-  let iter = try!(ProcIter::new());
+pub fn get_proc_map() -> Result<PrcMap, String> {
+  let iter = try!(PrcIter::new());
   iter.map(|proc_s|
     proc_s.map(|p|
       (p.stat.pid, p)
@@ -184,7 +184,7 @@ pub fn get_proc_map() -> Result<ProcMap, String> {
   ).collect()
 }
 
-pub enum ProcQuery {
+pub enum PrcQuery {
   PidQuery(TaskId),
   PpidQuery(TaskId),
   NameQuery(String),
@@ -192,26 +192,26 @@ pub enum ProcQuery {
   NoneQuery
 }
 
-impl ProcQuery {
-  fn create_query(query: &str) -> Result<ProcQuery, String> {
+impl PrcQuery {
+  fn create_query(query: &str) -> Result<PrcQuery, String> {
     let splits: Vec<_> = query.splitn(2, '=').collect();
 
     match splits.len() {
-      0 => Ok(ProcQuery::NoneQuery),
+      0 => Ok(PrcQuery::NoneQuery),
       1 => Ok(match query.parse().ok() {
-        Some(tid) => ProcQuery::PidQuery(tid),
-        None => ProcQuery::NameQuery(query.to_owned())
+        Some(tid) => PrcQuery::PidQuery(tid),
+        None => PrcQuery::NameQuery(query.to_owned())
       }),
       _ => {
         let q_text = splits[1].to_owned();
         let q_tid = q_text.parse();
         match &*splits[0].to_lowercase() {
-          "pid" => q_tid.map(|q| ProcQuery::PidQuery(q))
+          "pid" => q_tid.map(|q| PrcQuery::PidQuery(q))
             .or(Err("Query value for type 'pid' not valid".to_owned())),
-          "ppid" => q_tid.map(|q| ProcQuery::PpidQuery(q))
+          "ppid" => q_tid.map(|q| PrcQuery::PpidQuery(q))
             .or(Err("Query value for type 'ppid' not valid".to_owned())),
-          "name" => Ok(ProcQuery::NameQuery(q_text)),
-          "cmdline" => Ok(ProcQuery::CmdlineQuery(q_text)),
+          "name" => Ok(PrcQuery::NameQuery(q_text)),
+          "cmdline" => Ok(PrcQuery::CmdlineQuery(q_text)),
           _ => Err("Invalid query type".to_owned())
         }
       }
@@ -219,7 +219,7 @@ impl ProcQuery {
   }
 }
 
-impl FromStr for ProcQuery {
+impl FromStr for PrcQuery {
   type Err = String;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {

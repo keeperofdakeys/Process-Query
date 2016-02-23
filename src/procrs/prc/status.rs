@@ -6,7 +6,7 @@ use super::error::{PrcError, PrcFile};
 use super::{TaskId, MemSize};
 
 #[derive(Debug)]
-pub struct ProcStatus {
+pub struct PrcStatus {
   pub name: String,
   pub tgid: TaskId,
   pub pid: TaskId,
@@ -48,8 +48,8 @@ macro_rules! extract_line {
     ))
 }
 
-impl ProcStatus {
-  // Generate ProcStatus struct given a process directory
+impl PrcStatus {
+  // Generate PrcStatus struct given a process directory
   pub fn new(proc_dir: &str) -> Result<Self, PrcError> {
     // Try opening file
     let status_file = try!(
@@ -90,7 +90,7 @@ impl ProcStatus {
 
     // It's quite important that these appear in the order that they
     // appear in the status file
-    Ok(ProcStatus{
+    Ok(PrcStatus{
       name: extract_line!(status, "Name", |s| Some(s)),
       tgid: extract_line!(status, "Tgid", |s| s.parse().ok()),
       pid: extract_line!(status, "Pid", |s| s.parse().ok()),

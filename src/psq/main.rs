@@ -14,7 +14,7 @@ fn main() {
     ProgOpts{ tree: false, query: q,
               perf: perf, long: long, .. } => {
       let mut table = Table::init(
-        ProcIter::new_query(q).unwrap()
+        PrcIter::new_query(q).unwrap()
           .map(|p_r|
             p_r.map(|p|
               row![p.stat.pid, p.stat.ppid, p.stat.comm, p.cmdline.join(" ")]
@@ -32,7 +32,7 @@ fn main() {
 
     ProgOpts{ tree: true, query: q, .. } => {
       let proc_map: HashMap<_, _> =
-        ProcIter::new().unwrap()
+        PrcIter::new().unwrap()
         .map(|p_r|
           p_r.map(|p|
             (p.stat.pid, p)
@@ -52,7 +52,7 @@ fn main() {
       }
       proc_list.sort();
       let pid = match q {
-        ProcQuery::PidQuery(p) => p,
+        PrcQuery::PidQuery(p) => p,
         _ => 1
       };
       let mut pid_procs = Vec::new();
@@ -70,8 +70,8 @@ fn main() {
   }
 }
 
-fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
-              level_procs: &Vec<&Proc>, prefix: String) {
+fn print_tree(child_procs: &HashMap<TaskId, Vec<&Prc>>,
+              level_procs: &Vec<&Prc>, prefix: String) {
   let mut proc_list = level_procs.to_vec();
   proc_list.sort();
   for proc_struct in proc_list {
@@ -86,7 +86,7 @@ fn print_tree(child_procs: &HashMap<TaskId, Vec<&Proc>>,
 }
 
 struct ProgOpts {
-  query: ProcQuery,
+  query: PrcQuery,
   tree: bool,
   perf: bool,
   long: bool,
@@ -95,7 +95,7 @@ struct ProgOpts {
 
 fn parse_args() -> ProgOpts {
   let mut opts = ProgOpts {
-    query: ProcQuery::NoneQuery,
+    query: PrcQuery::NoneQuery,
     tree: false,
     perf: false,
     long: false,
