@@ -9,11 +9,10 @@ use std::str::FromStr;
 
 mod stat;
 mod status;
-pub mod error;
 
 use self::stat::PidStat;
 use self::status::PidStatus;
-use self::error::{PidError, PidFile};
+use ::error::{ProcError, ProcFile, ProcOper};
 
 pub type TaskId = i32;
 pub type MemSize = u64;
@@ -30,7 +29,7 @@ pub struct Pid {
 }
 
 impl Pid {
-  pub fn new(pid: TaskId) -> Result<Self, PidError> {
+  pub fn new(pid: TaskId) -> Result<Self, ProcError> {
     let proc_dir = format!("/proc/{}", pid);
     let proc_stat = try!(PidStat::new(&proc_dir));
     let proc_status = try!(PidStatus::new(&proc_dir));
@@ -45,15 +44,15 @@ impl Pid {
     Ok(proc_struct)
   }
 
-  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, PidError> {
+  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, ProcError> {
     File::open(Path::new(proc_dir).join("cmdline"))
-      .map_err(|e| PidError::Opening(PidFile::PidCmdline, e))
+      .map_err(|e| ProcError::new_err(ProcOper::Opening, ProcFile::PidCmdline, e))
       .and_then(|file| {
         let mut contents = Vec::new();
         try!(
           BufReader::new(file)
             .read_to_end(&mut contents)
-            .map_err(|e| PidError::Reading(PidFile::PidCmdline, e))
+            .map_err(|e| ProcError::new_err(ProcOper::Reading, ProcFile::PidCmdline, e))
         );
         if contents.ends_with(&['\0' as u8]) {
           let _ = contents.pop();
@@ -61,7 +60,8 @@ impl Pid {
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
-          .or(Err(PidError::Parsing(PidFile::PidCmdline, "parsing utf8")))
+          .or(Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidCmdline,
+                  Some("parsing utf8"))))
       }).map(|contents|
         contents
           .split('\0')

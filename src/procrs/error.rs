@@ -82,7 +82,7 @@ pub enum ProcOper {
 
 impl ProcOper {
   pub fn is_hard(&self) -> bool {
-    return match *self {
+    match *self {
       ProcOper::Opening => false,
       ProcOper::Reading => false,
       _ => true
@@ -118,85 +118,85 @@ impl fmt::Display for ProcOper {
 // Errors that can occur while reading /proc. These have an error
 // kind (error), a file/directory (file), an inner error (inner)
 // and optionally more information that is error-specific.
-pub struct ProcError<'a> {
+pub struct ProcError {
   error: ProcOper,
   file: ProcFile,
-  inner: Option<&'a Error>,
-  more: Option<&'a str>
+  inner: Option<Box<Error>>,
+  more: Option<&'static str>
 }
 
-impl<'a> ProcError<'a> {
-  pub fn new(error: ProcOper, file: ProcFile) -> ProcError<'a> {
+impl ProcError {
+  pub fn new_err<E: Error + 'static>(error: ProcOper, file: ProcFile, cause: E)
+    -> ProcError {
+    ProcError {
+      error: error,
+      file: file,
+      inner: Some(Box::new(cause)),
+      more: None
+    }
+  }
+
+  pub fn new_more(error: ProcOper, file: ProcFile, more: Option<&'static str>) -> ProcError {
     ProcError {
       error: error,
       file: file,
       inner: None,
-      more: None
+      more: more
     }
   }
 
-  pub fn new_err(error: ProcOper, file: ProcFile, cause: &'a Error)
-    -> ProcError<'a> {
+  pub fn new<E: Error + 'static>(error: ProcOper, file: ProcFile, cause: Option<E>,
+    more: Option<&'static str>) -> ProcError {
     ProcError {
       error: error,
       file: file,
-      inner: Some(cause),
-      more: None
+      inner: match cause {
+        Some(e) => Some(Box::new(e)),
+        None => None
+      },
+      more: more
     }
   }
 
-  pub fn new_more(error: ProcOper, file: ProcFile, cause: &'a Error,
-    more: &'a str) -> ProcError<'a> {
-    ProcError {
-      error: error,
-      file: file,
-      inner: Some(cause),
-      more: Some(more)
-    }
+  pub fn is_hard(&self) -> bool {
+    self.error.is_hard()
   }
 }
 
-impl<'a> Error for ProcError<'a> {
+impl Error for ProcError {
   fn description(&self) -> &str {
     self.error.description()
   }
 
-  fn cause(&self) -> Option<&Error> {
-    self.inner
+  fn cause(&self) -> Option<&'static Error> {
+    None
+    // self.inner
   }
 }
 
-impl<'a> fmt::Debug for ProcError<'a> {
+impl fmt::Debug for ProcError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    match self.error {
-      ProcOper::ParsingField if self.more.is_some() => match self.inner {
-        Some(e) =>
-          write!(f, "error {} {} from {}: {}", self.error.description(),
-            self.more.unwrap(), self.file.description(), e),
-        None =>
-          write!(f, "error {} {} from {}", self.error.description(),
-            self.more.unwrap(), self.file.description())
-      },
-      _ => match self.more {
-        Some(e) =>
-          write!(f, "error {} from {}: {}", self.error.description(),
-            self.file.description(), e),
-        None =>
-          write!(f, "error {} from {}", self.error.description(),
-            self.file.description())
-      }
+    let more = self.more.unwrap_or("");
+    let error;
+    if let Some(e) = self.inner.as_ref() {
+      error = e.description();
+    } else {
+      error = "";
     }
+    write!(f, "error {} ({}) from {}: {}",
+      self.error.description(), more,
+      self.file.description(), error)
   }
 }
 
-impl<'a> fmt::Display for ProcError<'a> {
+impl fmt::Display for ProcError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     fmt::Debug::fmt(self, f)
   }
 }
 
-impl<'a> PartialEq for ProcError<'a> {
+impl PartialEq for ProcError {
   fn eq(&self, other: &Self) -> bool {
-    self.error.eq(&other.error) && self.file.eq(&other.file)
+    self.error.eq(&other.error) && self.file.eq(&other.file) && self.more.eq(&other.more)
   }
 }

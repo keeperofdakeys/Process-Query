@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 use std::io::{Read, BufReader};
-use super::error::{PidError, PidFile};
+use ::error::{ProcError, ProcFile, ProcOper};
 use super::TaskId;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -65,55 +65,62 @@ macro_rules! stat_parse_num {
   ($item:expr) =>
     (try!(
       $item.ok_or(
-        PidError::Parsing(PidFile::PidStat, "missing field")
+        ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStat, Some("missing field"))
       ).and_then(|s|
          s.parse()
-           .or(Err(PidError::Parsing(PidFile::PidStat, "parsing number")))
+           .map_err(|e| ProcError::new(ProcOper::ParsingField, ProcFile::PidStat,
+                          Some(e), Some("parsing number")))
       )
     ))
 }
 
 macro_rules! stat_parse_opt_num {
   ($item:expr) =>
-    ($item.and_then(|s|
-       s.parse().ok()
-     ))
+    (match $item {
+      Some(n) => Some(stat_parse_num!(Some(n))),
+      None => None
+    })
 }
 
 impl PidStat {
   // Generate PidStat struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, PidError> {
+  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
     let file = try!(
       File::open(Path::new(proc_dir).join("stat"))
-        .map_err(|e| PidError::Opening(PidFile::PidStat, e))
+        .map_err(|e|
+          ProcError::new_err(ProcOper::Opening, ProcFile::PidStat, e)
+        )
     );
     let bytes = try!(BufReader::new(file)
       .bytes().collect::<Result<Vec<_>, _>>()
-      .map_err(|e| PidError::Reading(PidFile::PidStat, e))
+      .map_err(|e| ProcError::new_err(ProcOper::Reading, ProcFile::PidStat, e))
       .and_then(|s|
         String::from_utf8(s)
-        .or(Err(PidError::Parsing(PidFile::PidStat, "converting to utf8")))
+        .map_err(|e| ProcError::new_err(ProcOper::Parsing, ProcFile::PidStat, e))
       )
     );
     Self::parse_string(bytes)
   }
 
-  fn parse_string(bytes: String) -> Result<Self, PidError> {
+  fn parse_string(bytes: String) -> Result<Self, ProcError> {
     // /proc/.../stat is "numbers (prog_name) char numbers"
     // prog_name could have arbitrary characters, so we need to parse
     // the file from both ends
     let mut bytes_split = bytes.splitn(2, '(');
     let prefix = try!(bytes_split.next()
-      .ok_or(PidError::Parsing(PidFile::PidStat, "finding opening paren")));
+      .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("finding opening paren"))));
     let mut bytes_split = match bytes_split.next() {
       Some(b) => b.rsplitn(2, ')'),
-      None => return Err(PidError::Parsing(PidFile::PidStat, "finding closing paren"))
+      None => return Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat,
+                         Some("finding closing paren")))
     };
     // /proc/.../stat has a newline at the end
     let suffix = try!(bytes_split.next()
-      .ok_or(PidError::Parsing(PidFile::PidStat, "splitting file"))).trim();
+      .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting file")))
+      ).trim();
     let prog_name = try!(bytes_split.next()
-      .ok_or(PidError::Parsing(PidFile::PidStat, "splitting comm")));
+      .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting comm")))
+      ).trim();
     let mut split = suffix.split(' ');
 
     Ok(PidStat {
@@ -124,7 +131,8 @@ impl PidStat {
         split.next()
           .and_then(|s|
             get_procstate(s)
-          ).ok_or(PidError::Parsing(PidFile::PidStat, "parsing process state"))
+          ).ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat,
+                                      Some("parsing process state")))
       ),
       ppid: stat_parse_num!(split.next()),
       pgrp: stat_parse_num!(split.next()),
@@ -325,17 +333,20 @@ fn test_comm_parens() {
 #[test]
 fn test_invalid_parens() {
   let input = "14557   ) (psq (R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "splitting comm")));
+  assert_eq!(PidStat::parse_string(input),
+    Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting comm"))));
 }
 
 #[test]
 fn test_invalid_1() {
   let input = "14557 ".to_owned();
-  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "finding closing paren")));
+  assert_eq!(PidStat::parse_string(input),
+    Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("finding closing paren"))));
 }
 
 #[test]
 fn test_invalid_2() {
   let input = "14557 (a) 3".to_owned();
-  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "parsing process state")));
+  assert_eq!(PidStat::parse_string(input),
+    Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("parsing process state"))));
 }

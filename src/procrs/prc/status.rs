@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::collections::HashMap;
-use super::error::{PidError, PidFile};
+use ::error::{ProcError, ProcFile, ProcOper};
 use super::{TaskId, MemSize};
 
 #[derive(Debug)]
@@ -36,6 +36,7 @@ pub struct PidStatus {
 macro_rules! extract_line_opt {
   ($map:expr, $key:expr, $func:expr) =>
     ($map.remove($key)
+       // TODO: This should use .map instead
       .and_then($func)
     )
 }
@@ -44,17 +45,17 @@ macro_rules! extract_line {
   ($map:expr, $key:expr, $func:expr) =>
     (try!(
       extract_line_opt!($map, $key, $func)
-        .ok_or(PidError::Field(PidFile::PidStat, $key))
+        .ok_or(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some($key)))
     ))
 }
 
 impl PidStatus {
   // Generate PidStatus struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, PidError> {
+  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
     // Try opening file
     let status_file = try!(
       File::open(Path::new(proc_dir).join("status"))
-        .map_err(|e| PidError::Opening(PidFile::PidStatus, e))
+        .map_err(|e| ProcError::new_err(ProcOper::Opening, ProcFile::PidStatus, e))
     );
 
     let lines =
@@ -63,13 +64,13 @@ impl PidStatus {
         .map(|r|
           match r {
             Ok(o) => Ok(o),
-            Err(e) => Err(PidError::Reading(PidFile::PidStatus, e))
+            Err(e) => Err(ProcError::new_err(ProcOper::Reading, ProcFile::PidStatus, e))
           }
         );
     Self::parse_string(lines)
   }
 
-  fn parse_string<I: Iterator<Item=Result<String, PidError>>>(lines: I) -> Result<Self, PidError> {
+  fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines: I) -> Result<Self, ProcError> {
     let mut status: HashMap<_, _> = 
       try!(
         lines.map(|r|
@@ -80,7 +81,8 @@ impl PidStatus {
                 (Some(key), Some(value)) =>
                   Ok((key.trim().to_owned(),
                      value.trim().to_owned())),
-                _ => Err(PidError::Parsing(PidFile::PidStatus, "No colon on line"))
+                _ => Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStatus,
+                       Some("No colon on line")))
               }
             },
             Err(e) => Err(e)
@@ -116,6 +118,8 @@ impl PidStatus {
     })
   }
 }
+
+// TODO: These should return a boxed error
 
 fn parse_uids(uid_str: String) -> Option<(u32, u32, u32, u32)> {
   let uids = match
