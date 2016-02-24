@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io;
 use std::io::Write;
 use std::error::Error;
 
