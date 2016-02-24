@@ -119,8 +119,7 @@ impl PidStat {
       .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting file")))
       ).trim();
     let prog_name = try!(bytes_split.next()
-      .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting comm")))
-      ).trim();
+      .ok_or(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStat, Some("splitting comm"))));
     let mut split = suffix.split(' ');
 
     Ok(PidStat {
