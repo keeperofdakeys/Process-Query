@@ -2,11 +2,11 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::collections::HashMap;
-use super::error::{PrcError, PrcFile};
+use super::error::{PidError, PidFile};
 use super::{TaskId, MemSize};
 
 #[derive(Debug)]
-pub struct PrcStatus {
+pub struct PidStatus {
   pub name: String,
   pub tgid: TaskId,
   pub pid: TaskId,
@@ -44,17 +44,17 @@ macro_rules! extract_line {
   ($map:expr, $key:expr, $func:expr) =>
     (try!(
       extract_line_opt!($map, $key, $func)
-        .ok_or(PrcError::Field(PrcFile::PrcStat, $key))
+        .ok_or(PidError::Field(PidFile::PidStat, $key))
     ))
 }
 
-impl PrcStatus {
-  // Generate PrcStatus struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, PrcError> {
+impl PidStatus {
+  // Generate PidStatus struct given a process directory
+  pub fn new(proc_dir: &str) -> Result<Self, PidError> {
     // Try opening file
     let status_file = try!(
       File::open(Path::new(proc_dir).join("status"))
-        .map_err(|e| PrcError::Opening(PrcFile::PrcStatus, e))
+        .map_err(|e| PidError::Opening(PidFile::PidStatus, e))
     );
 
     let lines =
@@ -63,13 +63,13 @@ impl PrcStatus {
         .map(|r|
           match r {
             Ok(o) => Ok(o),
-            Err(e) => Err(PrcError::Reading(PrcFile::PrcStatus, e))
+            Err(e) => Err(PidError::Reading(PidFile::PidStatus, e))
           }
         );
     Self::parse_string(lines)
   }
 
-  fn parse_string<I: Iterator<Item=Result<String, PrcError>>>(lines: I) -> Result<Self, PrcError> {
+  fn parse_string<I: Iterator<Item=Result<String, PidError>>>(lines: I) -> Result<Self, PidError> {
     let mut status: HashMap<_, _> = 
       try!(
         lines.map(|r|
@@ -80,7 +80,7 @@ impl PrcStatus {
                 (Some(key), Some(value)) =>
                   Ok((key.trim().to_owned(),
                      value.trim().to_owned())),
-                _ => Err(PrcError::Parsing(PrcFile::PrcStatus, "No colon on line"))
+                _ => Err(PidError::Parsing(PidFile::PidStatus, "No colon on line"))
               }
             },
             Err(e) => Err(e)
@@ -90,7 +90,7 @@ impl PrcStatus {
 
     // It's quite important that these appear in the order that they
     // appear in the status file
-    Ok(PrcStatus{
+    Ok(PidStatus{
       name: extract_line!(status, "Name", |s| Some(s)),
       tgid: extract_line!(status, "Tgid", |s| s.parse().ok()),
       pid: extract_line!(status, "Pid", |s| s.parse().ok()),

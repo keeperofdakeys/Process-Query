@@ -1,14 +1,14 @@
 use std::fs::File;
 use std::path::Path;
 use std::io::{Read, BufReader};
-use super::error::{PrcError, PrcFile};
+use super::error::{PidError, PidFile};
 use super::TaskId;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PrcStat {
+pub struct PidStat {
   pub pid: TaskId,
   pub comm: String,
-  pub state: PrcState,
+  pub state: PidState,
   pub ppid: TaskId,
   pub pgrp: i32,
   pub session: i32,
@@ -65,10 +65,10 @@ macro_rules! stat_parse_num {
   ($item:expr) =>
     (try!(
       $item.ok_or(
-        PrcError::Parsing(PrcFile::PrcStat, "missing field")
+        PidError::Parsing(PidFile::PidStat, "missing field")
       ).and_then(|s|
          s.parse()
-           .or(Err(PrcError::Parsing(PrcFile::PrcStat, "parsing number")))
+           .or(Err(PidError::Parsing(PidFile::PidStat, "parsing number")))
       )
     ))
 }
@@ -80,43 +80,43 @@ macro_rules! stat_parse_opt_num {
      ))
 }
 
-impl PrcStat {
-  // Generate PrcStat struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, PrcError> {
+impl PidStat {
+  // Generate PidStat struct given a process directory
+  pub fn new(proc_dir: &str) -> Result<Self, PidError> {
     let file = try!(
       File::open(Path::new(proc_dir).join("stat"))
-        .map_err(|e| PrcError::Opening(PrcFile::PrcStat, e))
+        .map_err(|e| PidError::Opening(PidFile::PidStat, e))
     );
     let bytes = try!(BufReader::new(file)
       .bytes().collect::<Result<Vec<_>, _>>()
-      .map_err(|e| PrcError::Reading(PrcFile::PrcStat, e))
+      .map_err(|e| PidError::Reading(PidFile::PidStat, e))
       .and_then(|s|
         String::from_utf8(s)
-        .or(Err(PrcError::Parsing(PrcFile::PrcStat, "converting to utf8")))
+        .or(Err(PidError::Parsing(PidFile::PidStat, "converting to utf8")))
       )
     );
     Self::parse_string(bytes)
   }
 
-  fn parse_string(bytes: String) -> Result<Self, PrcError> {
+  fn parse_string(bytes: String) -> Result<Self, PidError> {
     // /proc/.../stat is "numbers (prog_name) char numbers"
     // prog_name could have arbitrary characters, so we need to parse
     // the file from both ends
     let mut bytes_split = bytes.splitn(2, '(');
     let prefix = try!(bytes_split.next()
-      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "finding opening paren")));
+      .ok_or(PidError::Parsing(PidFile::PidStat, "finding opening paren")));
     let mut bytes_split = match bytes_split.next() {
       Some(b) => b.rsplitn(2, ')'),
-      None => return Err(PrcError::Parsing(PrcFile::PrcStat, "finding closing paren"))
+      None => return Err(PidError::Parsing(PidFile::PidStat, "finding closing paren"))
     };
     // /proc/.../stat has a newline at the end
     let suffix = try!(bytes_split.next()
-      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "splitting file"))).trim();
+      .ok_or(PidError::Parsing(PidFile::PidStat, "splitting file"))).trim();
     let prog_name = try!(bytes_split.next()
-      .ok_or(PrcError::Parsing(PrcFile::PrcStat, "splitting comm")));
+      .ok_or(PidError::Parsing(PidFile::PidStat, "splitting comm")));
     let mut split = suffix.split(' ');
 
-    Ok(PrcStat {
+    Ok(PidStat {
       pid: stat_parse_num!(prefix.split(' ').next()),
       // From here parse from back, since arbitrary data can be in program name
       comm: prog_name.to_owned(),
@@ -124,7 +124,7 @@ impl PrcStat {
         split.next()
           .and_then(|s|
             get_procstate(s)
-          ).ok_or(PrcError::Parsing(PrcFile::PrcStat, "parsing process state"))
+          ).ok_or(PidError::Parsing(PidFile::PidStat, "parsing process state"))
       ),
       ppid: stat_parse_num!(split.next()),
       pgrp: stat_parse_num!(split.next()),
@@ -195,7 +195,7 @@ impl PrcStat {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PrcState {
+pub enum PidState {
   Running,
   Sleeping,
   Waiting,
@@ -208,28 +208,28 @@ pub enum PrcState {
   Parked
 }
 
-fn get_procstate(state: &str) -> Option<PrcState> {
+fn get_procstate(state: &str) -> Option<PidState> {
   match state {
-    "R" => Some(PrcState::Running),
-    "S" => Some(PrcState::Sleeping),
-    "D" => Some(PrcState::Waiting),
-    "Z" => Some(PrcState::Zombie),
-    "T" => Some(PrcState::Stopped),
-    "t" => Some(PrcState::Tracing),
-    "X" | "x" => Some(PrcState::Dead),
-    "K" => Some(PrcState::Wakekill),
-    "W" => Some(PrcState::Waking),
-    "P" => Some(PrcState::Parked),
+    "R" => Some(PidState::Running),
+    "S" => Some(PidState::Sleeping),
+    "D" => Some(PidState::Waiting),
+    "Z" => Some(PidState::Zombie),
+    "T" => Some(PidState::Stopped),
+    "t" => Some(PidState::Tracing),
+    "X" | "x" => Some(PidState::Dead),
+    "K" => Some(PidState::Wakekill),
+    "W" => Some(PidState::Waking),
+    "P" => Some(PidState::Parked),
      _  => None
   }
 }
 
 #[test]
 fn test_parsing() {
-  let test_prc = PrcStat{
+  let test_prc = PidStat{
     pid: 14557,
     comm: "psq".to_owned(),
-    state: PrcState::Stopped,
+    state: PidState::Stopped,
     ppid: 14364,
     pgrp: 14557,
     session: 14364,
@@ -282,60 +282,60 @@ fn test_parsing() {
   };
 
   let input = "14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Ok(test_prc));
+  assert_eq!(PidStat::parse_string(input), Ok(test_prc));
 }
 
-// For each of the following tests, the previous text input is used to create a PrcStat struct.
+// For each of the following tests, the previous text input is used to create a PidStat struct.
 
 #[test]
 fn test_state_running() {
-  let mut prc = PrcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
-  prc.state = PrcState::Running;
+  let mut prc = PidStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = PidState::Running;
   let input = "14557 (psq) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Ok(prc));
+  assert_eq!(PidStat::parse_string(input), Ok(prc));
 }
 
 #[test]
 fn test_comm_space() {
-  let mut prc = PrcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
-  prc.state = PrcState::Running;
+  let mut prc = PidStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = PidState::Running;
   prc.comm = "psq ".to_owned();
   let input = "14557 (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Ok(prc));
+  assert_eq!(PidStat::parse_string(input), Ok(prc));
 }
 
 #[test]
 fn test_double_space() {
-  let mut prc = PrcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
-  prc.state = PrcState::Running;
+  let mut prc = PidStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = PidState::Running;
   prc.comm = "psq ".to_owned();
   let input = "14557  (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Ok(prc));
+  assert_eq!(PidStat::parse_string(input), Ok(prc));
 }
 
 #[test]
 fn test_comm_parens() {
-  let mut prc = PrcStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
-  prc.state = PrcState::Running;
+  let mut prc = PidStat::parse_string("14557 (psq) T 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned()).unwrap();
+  prc.state = PidState::Running;
   prc.comm = " ) (psq ".to_owned();
   let input = "14557  ( ) (psq ) R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Ok(prc));
+  assert_eq!(PidStat::parse_string(input), Ok(prc));
 }
 
 #[test]
 fn test_invalid_parens() {
   let input = "14557   ) (psq (R 14364 14557 14364 34823 14638 1077952512 1178 0 0 0 16 0 0 0 20 0 1 0 609164 23785472 1707 18446744073709551615 94178658361344 94178659818816 140735096462144 140735096450384 94178659203252 0 0 4224 1088 1 0 0 17 2 0 0 0 0 0 94178661916280 94178661971297 94178690334720 140735096465030 140735096465049 140735096465049 140735096467429 0".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "splitting comm")));
+  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "splitting comm")));
 }
 
 #[test]
 fn test_invalid_1() {
   let input = "14557 ".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "finding closing paren")));
+  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "finding closing paren")));
 }
 
 #[test]
 fn test_invalid_2() {
   let input = "14557 (a) 3".to_owned();
-  assert_eq!(PrcStat::parse_string(input), Err(PrcError::Parsing(PrcFile::PrcStat, "parsing process state")));
+  assert_eq!(PidStat::parse_string(input), Err(PidError::Parsing(PidFile::PidStat, "parsing process state")));
 }

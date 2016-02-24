@@ -11,9 +11,9 @@ mod stat;
 mod status;
 pub mod error;
 
-use self::stat::PrcStat;
-use self::status::PrcStatus;
-use self::error::{PrcError, PrcFile};
+use self::stat::PidStat;
+use self::status::PidStatus;
+use self::error::{PidError, PidFile};
 
 pub type TaskId = i32;
 pub type MemSize = u64;
@@ -23,20 +23,20 @@ fn err_str<T: ToString>(err: T) -> String {
 }
 
 #[derive(Debug)]
-pub struct Prc {
-  pub stat: Box<PrcStat>,
-  pub status: Box<PrcStatus>,
+pub struct Pid {
+  pub stat: Box<PidStat>,
+  pub status: Box<PidStatus>,
   pub cmdline: Vec<String>
 }
 
-impl Prc {
-  pub fn new(pid: TaskId) -> Result<Self, PrcError> {
+impl Pid {
+  pub fn new(pid: TaskId) -> Result<Self, PidError> {
     let proc_dir = format!("/proc/{}", pid);
-    let proc_stat = try!(PrcStat::new(&proc_dir));
-    let proc_status = try!(PrcStatus::new(&proc_dir));
+    let proc_stat = try!(PidStat::new(&proc_dir));
+    let proc_status = try!(PidStatus::new(&proc_dir));
     let cmdline = try!(Self::read_cmdline(&proc_dir));
 
-    let proc_struct = Prc{
+    let proc_struct = Pid{
       stat: Box::new(proc_stat),
       status: Box::new(proc_status),
       cmdline: cmdline
@@ -45,15 +45,15 @@ impl Prc {
     Ok(proc_struct)
   }
 
-  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, PrcError> {
+  fn read_cmdline(proc_dir: &str) -> Result<Vec<String>, PidError> {
     File::open(Path::new(proc_dir).join("cmdline"))
-      .map_err(|e| PrcError::Opening(PrcFile::PrcCmdline, e))
+      .map_err(|e| PidError::Opening(PidFile::PidCmdline, e))
       .and_then(|file| {
         let mut contents = Vec::new();
         try!(
           BufReader::new(file)
             .read_to_end(&mut contents)
-            .map_err(|e| PrcError::Reading(PrcFile::PrcCmdline, e))
+            .map_err(|e| PidError::Reading(PidFile::PidCmdline, e))
         );
         if contents.ends_with(&['\0' as u8]) {
           let _ = contents.pop();
@@ -61,7 +61,7 @@ impl Prc {
         Ok(contents)
       }).and_then(|contents| {
         String::from_utf8(contents)
-          .or(Err(PrcError::Parsing(PrcFile::PrcCmdline, "parsing utf8")))
+          .or(Err(PidError::Parsing(PidFile::PidCmdline, "parsing utf8")))
       }).map(|contents|
         contents
           .split('\0')
@@ -71,56 +71,56 @@ impl Prc {
   }
 
   // Return true if query matches this process
-  fn query(&self, query: &PrcQuery) -> bool {
+  fn query(&self, query: &PidQuery) -> bool {
     match *query {
-      PrcQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
-      PrcQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
-      PrcQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
-      PrcQuery::CmdlineQuery(ref q) => string_query(&self.cmdline.join(" "), &q),
-      PrcQuery::NoneQuery => true
+      PidQuery::PidQuery(q) => taskid_query(self.stat.pid, q),
+      PidQuery::PpidQuery(q) => taskid_query(self.stat.ppid, q),
+      PidQuery::NameQuery(ref q) => string_query(&self.stat.comm, &q),
+      PidQuery::CmdlineQuery(ref q) => string_query(&self.cmdline.join(" "), &q),
+      PidQuery::NoneQuery => true
     }
   }
 }
 
-impl PartialEq for Prc {
+impl PartialEq for Pid {
   fn eq(&self, other: &Self) -> bool {
     self.stat.pid.eq(&other.stat.pid)
   }
 }
 
-impl Eq for Prc {}
-impl PartialOrd for Prc {
+impl Eq for Pid {}
+impl PartialOrd for Pid {
   fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
     Some(self.cmp(other))
   }
 }
-impl Ord for Prc {
+impl Ord for Pid {
   fn cmp(&self, other: &Self) -> Ordering {
     self.stat.pid.cmp(&other.stat.pid)
   }
 }
 
-pub struct PrcIter {
+pub struct PidIter {
   dir_iter: ReadDir,
-  query: PrcQuery
+  query: PidQuery
 }
 
-impl PrcIter {
+impl PidIter {
   pub fn new() -> Result<Self, String> {
-    Self::new_query(PrcQuery::NoneQuery)
+    Self::new_query(PidQuery::NoneQuery)
   }
 
-  pub fn new_query(query: PrcQuery) -> Result<Self, String> {
+  pub fn new_query(query: PidQuery) -> Result<Self, String> {
     let proc_dir = Path::new("/proc");
     let dir_iter = try!(fs::read_dir(proc_dir).map_err(err_str));
-    Ok(PrcIter{
+    Ok(PidIter{
       dir_iter: dir_iter,
       query: query
     })
   }
 
-  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &PrcQuery)
-    -> Option<Result<Prc, String>> {
+  fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &PidQuery)
+    -> Option<Result<Pid, String>> {
     // TODO: This sucks, find a better way
     let file = entry_opt
       .map_err(err_str)
@@ -135,7 +135,7 @@ impl PrcIter {
 
     match file.unwrap().parse() {
       Ok(pid) => {
-        let proc_s_r = Prc::new(pid);
+        let proc_s_r = Pid::new(pid);
         if proc_s_r.is_err() {
           if proc_s_r.as_ref().unwrap_err().is_hard() {
             return Some(proc_s_r.map_err(err_str));
@@ -154,8 +154,8 @@ impl PrcIter {
   }
 }
 
-impl Iterator for PrcIter {
-  type Item = Result<Prc, String>;
+impl Iterator for PidIter {
+  type Item = Result<Pid, String>;
 
   fn next(&mut self) -> Option<Self::Item> {
     for entry in self.dir_iter.by_ref() {
@@ -173,10 +173,10 @@ impl Iterator for PrcIter {
   }
 }
 
-pub type PrcMap = HashMap<TaskId, Prc>;
+pub type PidMap = HashMap<TaskId, Pid>;
 
-pub fn get_proc_map() -> Result<PrcMap, String> {
-  let iter = try!(PrcIter::new());
+pub fn get_proc_map() -> Result<PidMap, String> {
+  let iter = try!(PidIter::new());
   iter.map(|proc_s|
     proc_s.map(|p|
       (p.stat.pid, p)
@@ -184,7 +184,7 @@ pub fn get_proc_map() -> Result<PrcMap, String> {
   ).collect()
 }
 
-pub enum PrcQuery {
+pub enum PidQuery {
   PidQuery(TaskId),
   PpidQuery(TaskId),
   NameQuery(String),
@@ -192,26 +192,26 @@ pub enum PrcQuery {
   NoneQuery
 }
 
-impl PrcQuery {
-  fn create_query(query: &str) -> Result<PrcQuery, String> {
+impl PidQuery {
+  fn create_query(query: &str) -> Result<PidQuery, String> {
     let splits: Vec<_> = query.splitn(2, '=').collect();
 
     match splits.len() {
-      0 => Ok(PrcQuery::NoneQuery),
+      0 => Ok(PidQuery::NoneQuery),
       1 => Ok(match query.parse().ok() {
-        Some(tid) => PrcQuery::PidQuery(tid),
-        None => PrcQuery::NameQuery(query.to_owned())
+        Some(tid) => PidQuery::PidQuery(tid),
+        None => PidQuery::NameQuery(query.to_owned())
       }),
       _ => {
         let q_text = splits[1].to_owned();
         let q_tid = q_text.parse();
         match &*splits[0].to_lowercase() {
-          "pid" => q_tid.map(|q| PrcQuery::PidQuery(q))
+          "pid" => q_tid.map(|q| PidQuery::PidQuery(q))
             .or(Err("Query value for type 'pid' not valid".to_owned())),
-          "ppid" => q_tid.map(|q| PrcQuery::PpidQuery(q))
+          "ppid" => q_tid.map(|q| PidQuery::PpidQuery(q))
             .or(Err("Query value for type 'ppid' not valid".to_owned())),
-          "name" => Ok(PrcQuery::NameQuery(q_text)),
-          "cmdline" => Ok(PrcQuery::CmdlineQuery(q_text)),
+          "name" => Ok(PidQuery::NameQuery(q_text)),
+          "cmdline" => Ok(PidQuery::CmdlineQuery(q_text)),
           _ => Err("Invalid query type".to_owned())
         }
       }
@@ -219,7 +219,7 @@ impl PrcQuery {
   }
 }
 
-impl FromStr for PrcQuery {
+impl FromStr for PidQuery {
   type Err = String;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
