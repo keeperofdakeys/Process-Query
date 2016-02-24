@@ -16,6 +16,10 @@ argparse = "0.2"
 name="psq"
 path="src/psq/main.rs"
 
+[[bin]]
+name="freer"
+path="src/freer/main.rs"
+
 [lib]
 name="procrs"
 path="src/procrs/lib.rs"
