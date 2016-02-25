@@ -2,7 +2,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io::{Read, BufReader};
 use ::error::{ProcError, ProcFile, ProcOper};
-use super::TaskId;
+use ::TaskId;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PidStat {
@@ -84,9 +84,9 @@ macro_rules! stat_parse_opt_num {
 
 impl PidStat {
   // Generate PidStat struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
+  pub fn new(pid_dir: &str) -> Result<Self, ProcError> {
     let file = try!(
-      File::open(Path::new(proc_dir).join("stat"))
+      File::open(Path::new(pid_dir).join("stat"))
         .map_err(|e|
           ProcError::new_err(ProcOper::Opening, ProcFile::PidStat, e)
         )

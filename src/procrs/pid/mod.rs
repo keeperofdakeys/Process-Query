@@ -13,9 +13,7 @@ mod status;
 use self::stat::PidStat;
 use self::status::PidStatus;
 use ::error::{ProcError, ProcFile, ProcOper};
-
-pub type TaskId = i32;
-pub type MemSize = u64;
+use ::{TaskId, MemSize};
 
 fn err_str<T: ToString>(err: T) -> String {
   err.to_string()

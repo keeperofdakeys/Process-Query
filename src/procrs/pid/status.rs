@@ -3,7 +3,7 @@ use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::collections::HashMap;
 use ::error::{ProcError, ProcFile, ProcOper};
-use super::{TaskId, MemSize};
+use ::{TaskId, MemSize};
 
 #[derive(Debug)]
 pub struct PidStatus {
@@ -51,10 +51,10 @@ macro_rules! extract_line {
 
 impl PidStatus {
   // Generate PidStatus struct given a process directory
-  pub fn new(proc_dir: &str) -> Result<Self, ProcError> {
+  pub fn new(pid_dir: &str) -> Result<Self, ProcError> {
     // Try opening file
     let status_file = try!(
-      File::open(Path::new(proc_dir).join("status"))
+      File::open(Path::new(pid_dir).join("status"))
         .map_err(|e| ProcError::new_err(ProcOper::Opening, ProcFile::PidStatus, e))
     );
 

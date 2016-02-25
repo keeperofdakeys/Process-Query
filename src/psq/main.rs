@@ -5,7 +5,8 @@ extern crate prettytable;
 use prettytable::Table;
 use prettytable::format::FormatBuilder;
 use std::collections::HashMap;
-use procrs::prc::*;
+use procrs::pid::*;
+use procrs::TaskId;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
 fn main() {
