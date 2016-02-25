@@ -112,11 +112,11 @@ impl fmt::Display for ProcOper {
   }
 }
 
-// The error type for operations on /proc.
-//
-// Errors that can occur while reading /proc. These have an error
-// kind (error), a file/directory (file), an inner error (inner)
-// and optionally more information that is error-specific.
+/// The error type for operations on /proc.
+///
+/// Errors that can occur while reading /proc. These have an error
+/// kind (error), a file/directory (file), an inner error (inner)
+/// and optionally more information that is error-specific.
 pub struct ProcError {
   error: ProcOper,
   file: ProcFile,
@@ -167,9 +167,8 @@ impl Error for ProcError {
     self.error.description()
   }
 
-  fn cause(&self) -> Option<&'static Error> {
-    None
-    // self.inner
+  fn cause(&self) -> Option<&Error> {
+    self.inner.as_ref().map(|e| e.as_ref())
   }
 }
 
