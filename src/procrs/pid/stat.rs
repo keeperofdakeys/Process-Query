@@ -91,7 +91,7 @@ impl PidStat {
           ProcError::new_err(ProcOper::Opening, ProcFile::PidStat, e)
         )
     );
-    let bytes = try!(BufReader::new(file)
+    let bytes = try!(BufReader::with_capacity(4096, file)
       .bytes().collect::<Result<Vec<_>, _>>()
       .map_err(|e| ProcError::new_err(ProcOper::Reading, ProcFile::PidStat, e))
       .and_then(|s|

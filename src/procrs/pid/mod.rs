@@ -48,7 +48,7 @@ impl Pid {
       .and_then(|file| {
         let mut contents = Vec::new();
         try!(
-          BufReader::new(file)
+          BufReader::with_capacity(4096, file)
             .read_to_end(&mut contents)
             .map_err(|e| ProcError::new_err(ProcOper::Reading, ProcFile::PidCmdline, e))
         );

@@ -59,7 +59,7 @@ impl PidStatus {
     );
 
     let lines =
-      BufReader::new(status_file)
+      BufReader::with_capacity(4096, status_file)
         .lines()
         .map(|r|
           match r {
