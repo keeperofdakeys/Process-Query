@@ -1,0 +1,24 @@
+# Please don't use this!
+#
+# Unfortunately rustfmt isn't smart enough yet, chain_base_indent and
+# chain_indent don't seem to work on some chained calls. They become
+# indented not to the next indent level, but to the previous function
+# or macro argument. This ends up making narrow columns of code on the
+# far right of the screen.
+#
+# This makes the code harder to read, and ten times harder to modify.
+# So for now rustfmt is a no-go till it becomes smarter and/or more
+# configurable.
+#
+#
+# tab_spaces = 4
+# write_mode = "diff"
+# # max_width = 150
+# # fn_call_width=75
+# fn_args_density = "compressed"
+# fn_arg_indent = "Tabbed"
+# chain_base_indent = "Tabbed"
+# chain_indent = "Tabbed"
+# reorder_imports = true
+# match_wildcard_trailing_comma = false
+#
