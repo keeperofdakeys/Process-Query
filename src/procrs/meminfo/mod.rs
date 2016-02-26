@@ -27,53 +27,50 @@ impl From<io::Error> for MeminfoError {
 
 #[derive(Debug)]
 pub struct MeminfoStatus {
-// MemTotal:       12202880 kB
-    memtotal: u64,
-// MemFree:         1927408 kB
-    memfree: u64,
-// MemAvailable:    8288884 kB
-    memavailable: u64,
-// Buffers:               8 kB
-// Cached:          6253764 kB
-// SwapCached:       254028 kB
-// Active:          5520944 kB
-// Inactive:        3843272 kB
-// Active(anon):    2010724 kB
-// Inactive(anon):  1442068 kB
-// Active(file):    3510220 kB
-// Inactive(file):  2401204 kB
-// Unevictable:       22312 kB
-// Mlocked:           22312 kB
-// SwapTotal:       6160380 kB
-// SwapFree:        4597788 kB
-// Dirty:               392 kB
-// Writeback:             0 kB
-// AnonPages:       2960724 kB
-// Mapped:           397256 kB
-// Shmem:            333604 kB
-// Slab:             644044 kB
-// SReclaimable:     502180 kB
-// SUnreclaim:       141864 kB
-// KernelStack:       13216 kB
-// PageTables:        56408 kB
-// NFS_Unstable:          0 kB
-// Bounce:                0 kB
-// WritebackTmp:          0 kB
-// CommitLimit:    12261820 kB
-// Committed_AS:   10955940 kB
-// VmallocTotal:   34359738367 kB
-// VmallocUsed:      685436 kB
-// VmallocChunk:   34358161404 kB
-// HardwareCorrupted:     0 kB
-// AnonHugePages:         0 kB
-// HugePages_Total:       0
-// HugePages_Free:        0
-// HugePages_Rsvd:        0
-// HugePages_Surp:        0
-// Hugepagesize:       2048 kB
-// DirectMap4k:      738332 kB
-// DirectMap2M:    11743232 kB
-// DirectMap1G:     1048576 kB
+    pub memtotal: u64,
+    pub memfree: u64,
+    pub memavailable: u64,
+    pub buffers: u64,
+    pub cached: u64,
+    pub swapcached: u64,
+    pub active: u64,
+    pub inactive: u64,
+    pub activeanon: u64,
+    pub inactiveanon: u64,
+    pub activefile: u64,
+    pub inactivefile: u64,
+    pub unevictable: u64,
+    pub mlocked: u64,
+    pub swaptotal: u64,
+    pub swapfree: u64,
+    pub dirty: u64,
+    pub writeback: u64,
+    pub anonpages: u64,
+    pub mapped: u64,
+    pub shmem: u64,
+    pub slab: u64,
+    pub srelclaimable: u64,
+    pub sunreclaim: u64,
+    pub kernelstack: u64,
+    pub pagetables: u64,
+    pub nfsunstable: u64,
+    pub bounce: u64,
+    pub writebacktmp: u64,
+    pub commitlimit: u64,
+    pub committedas: u64,
+    pub vmalloctotal: u64,
+    pub vmallocused: u64,
+    pub vmallocchunk: u64,
+    pub hardwarecorrupted: u64,
+    pub anonhugepages: u64,
+    pub hugepagestotal: u64,
+    pub hugepagesfree: u64,
+    pub hugepagsersvd: u64,
+    pub hugepagessurp: u64,
+    pub hugepagessize: u64,
+    pub directmap4k: u64,
+    pub directmap2m: u64,
+    pub directmap1g: u64,
 }
 
 
@@ -108,12 +105,52 @@ impl MeminfoStatus {
 
     //This then takes the values out and puts them into an minfo
     fn build_minfo(hmap: HashMap<String, u64>) -> Result<MeminfoStatus, MeminfoError> {
-        println!("{:?}", hmap);
         // REALLY REALLY improve this handling of Option types ...
         let minfo = MeminfoStatus {
             memtotal: hmap.get("MemTotal").unwrap().clone(),
             memfree: hmap.get("MemFree").unwrap().clone(),
             memavailable: hmap.get("MemAvailable").unwrap().clone(),
+            buffers: hmap.get("Buffers").unwrap().clone(),
+            cached: hmap.get("Cached").unwrap().clone(),
+            swapcached: hmap.get("SwapCached").unwrap().clone(),
+            active: hmap.get("Active").unwrap().clone(),
+            inactive: hmap.get("Inactive").unwrap().clone(),
+            activeanon: hmap.get("Active(anon)").unwrap().clone(),
+            inactiveanon: hmap.get("Inactive(anon)").unwrap().clone(),
+            activefile: hmap.get("Active(file)").unwrap().clone(),
+            inactivefile: hmap.get("Inactive(file)").unwrap().clone(),
+            unevictable: hmap.get("Unevictable").unwrap().clone(),
+            mlocked: hmap.get("Mlocked").unwrap().clone(),
+            swaptotal: hmap.get("SwapTotal").unwrap().clone(),
+            swapfree: hmap.get("SwapFree").unwrap().clone(),
+            dirty: hmap.get("Dirty").unwrap().clone(),
+            writeback: hmap.get("Writeback").unwrap().clone(),
+            anonpages: hmap.get("AnonPages").unwrap().clone(),
+            mapped: hmap.get("Mapped").unwrap().clone(),
+            shmem: hmap.get("Shmem").unwrap().clone(),
+            slab: hmap.get("Slab").unwrap().clone(),
+            srelclaimable: hmap.get("SReclaimable").unwrap().clone(),
+            sunreclaim: hmap.get("SUnreclaim").unwrap().clone(),
+            kernelstack: hmap.get("KernelStack").unwrap().clone(),
+            pagetables: hmap.get("PageTables").unwrap().clone(),
+            nfsunstable: hmap.get("NFS_Unstable").unwrap().clone(),
+            bounce: hmap.get("Bounce").unwrap().clone(),
+            writebacktmp: hmap.get("WritebackTmp").unwrap().clone(),
+            commitlimit: hmap.get("CommitLimit").unwrap().clone(),
+            committedas: hmap.get("Committed_AS").unwrap().clone(),
+            vmalloctotal: hmap.get("VmallocTotal").unwrap().clone(),
+            vmallocused: hmap.get("VmallocUsed").unwrap().clone(),
+            vmallocchunk: hmap.get("VmallocChunk").unwrap().clone(),
+            hardwarecorrupted: hmap.get("HardwareCorrupted").unwrap().clone(),
+            anonhugepages: hmap.get("AnonHugePages").unwrap().clone(),
+            hugepagestotal: hmap.get("HugePages_Total").unwrap().clone(),
+            hugepagesfree: hmap.get("HugePages_Free").unwrap().clone(),
+            hugepagsersvd: hmap.get("HugePages_Rsvd").unwrap().clone(),
+            hugepagessurp: hmap.get("HugePages_Surp").unwrap().clone(),
+            hugepagessize: hmap.get("Hugepagesize").unwrap().clone(),
+            directmap4k: hmap.get("DirectMap4k").unwrap().clone(),
+            directmap2m: hmap.get("DirectMap2M").unwrap().clone(),
+            directmap1g: hmap.get("DirectMap1G").unwrap().clone(),
         };
         Ok(minfo)
     }
@@ -125,7 +162,7 @@ impl fmt::Display for MeminfoStatus {
     // make a display method to dump the whole struct
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // This won't be nice for all the values we have ...
-        write!(f, "Memtotal: {}\nMemFree: {}", self.memtotal, self.memfree )
+        write!(f, "{:?}", self )
     }
 }
 
