@@ -2,7 +2,7 @@
 name = "procrs"
 version = "0.2.0"
 authors = ["Josh Driver <keeperofdakeys@gmail.com>"]
-description = "Linux process query command and library"
+description = "Tools library for querying /proc on Linux"
 repository = "https://github.com/keeperofdakeys/Process-Query"
 readme = "README.md"
 
