@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["PidQuery","A list of query types for process querying."]],"struct":[["Pid","A struct containing information about a process."],["PidIter","An Iterator over processes in the system."]]});

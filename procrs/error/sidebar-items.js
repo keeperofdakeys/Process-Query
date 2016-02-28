@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ProcFile","A list of files contained in the /proc directory>"],["ProcOper","A list of errors that can occur while operating on something in /proc."]],"struct":[["ProcError","The error type for operations on /proc."]]});

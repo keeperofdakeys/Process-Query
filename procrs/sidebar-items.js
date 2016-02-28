@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["error","The error type used for this crate"],["meminfo","Get informmation about system memory"],["pid","Get information about a process (/proc/[pid]/)"]],"type":[["MemSize","The type used to repesent memory (in bytes)"],["TaskId","The type used to repesent pids"]]});
