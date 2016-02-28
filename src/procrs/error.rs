@@ -7,7 +7,7 @@ use std::error::Error;
 /// This list is used to identify which file or directory an error is relating too.
 #[derive(PartialEq)]
 pub enum ProcFile {
-    /// /proc Directory, contains files containg various pieces of information about the system.
+    /// /proc directory, contains files containg various pieces of information about the system.
     ProcDir,
     /// /proc/cmdline file, contains the cmdline used when starting the kernel.
     ProcCmdline,
@@ -71,7 +71,7 @@ impl fmt::Display for ProcFile {
 pub enum ProcOper {
     /// Error opening a file/directory.
     Opening,
-    /// Error reading a file/directorr.
+    /// Error reading a file/directory.
     Reading,
     /// Error parsing a file/directory.
     Parsing,
@@ -118,36 +118,40 @@ impl fmt::Display for ProcOper {
 /// kind (error), a file/directory (file), an inner error (inner)
 /// and optionally more information that is error-specific.
 pub struct ProcError {
-    error: ProcOper,
+    /// Operation that triggered this error.
+    operation: ProcOper,
+    /// Error relates to this file type.
     file: ProcFile,
+    /// Inner error that occured, if applicable.
     inner: Option<Box<Error>>,
+    /// More information about this error (like field name).
     more: Option<&'static str>
 }
 
 impl ProcError {
-    pub fn new_err<E: Error + 'static>(error: ProcOper, file: ProcFile, cause: E)
+    pub fn new_err<E: Error + 'static>(operation: ProcOper, file: ProcFile, cause: E)
         -> ProcError {
         ProcError {
-            error: error,
+            operation: operation,
             file: file,
             inner: Some(Box::new(cause)),
             more: None
         }
     }
 
-    pub fn new_more(error: ProcOper, file: ProcFile, more: Option<&'static str>) -> ProcError {
+    pub fn new_more(operation: ProcOper, file: ProcFile, more: Option<&'static str>) -> ProcError {
         ProcError {
-            error: error,
+            operation: operation,
             file: file,
             inner: None,
             more: more
         }
     }
 
-    pub fn new<E: Error + 'static>(error: ProcOper, file: ProcFile, cause: Option<E>,
+    pub fn new<E: Error + 'static>(operation: ProcOper, file: ProcFile, cause: Option<E>,
         more: Option<&'static str>) -> ProcError {
         ProcError {
-            error: error,
+            operation: operation,
             file: file,
             inner: match cause {
                 Some(e) => Some(Box::new(e)),
@@ -158,13 +162,13 @@ impl ProcError {
     }
 
     pub fn is_hard(&self) -> bool {
-        self.error.is_hard()
+        self.operation.is_hard()
     }
 }
 
 impl Error for ProcError {
     fn description(&self) -> &str {
-        self.error.description()
+        self.operation.description()
     }
 
     fn cause(&self) -> Option<&Error> {
@@ -182,7 +186,7 @@ impl fmt::Debug for ProcError {
             error = "";
         }
         write!(f, "error {} ({}) from {}: {}",
-            self.error.description(), more,
+            self.operation.description(), more,
             self.file.description(), error)
     }
 }
@@ -195,7 +199,7 @@ impl fmt::Display for ProcError {
 
 impl PartialEq for ProcError {
     fn eq(&self, other: &Self) -> bool {
-        self.error.eq(&other.error) &&
+        self.operation.eq(&other.operation) &&
             self.file.eq(&other.file) &&
             self.more.eq(&other.more)
     }

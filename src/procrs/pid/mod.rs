@@ -6,7 +6,9 @@ use std::io::BufReader;
 use std::cmp::Ordering;
 use std::str::FromStr;
 
+/// Get process stats (/proc/[pid]/stat)
 mod stat;
+/// Get process status (/proc/[pid]/status)
 mod status;
 
 use self::stat::PidStat;

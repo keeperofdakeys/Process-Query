@@ -20,6 +20,13 @@ fn main() {
 
     let mut name_indent = HashMap::new();
 
+    if verbose {
+        for pid in pids {
+            println!("{:?}", pid);
+        }
+        return
+    }
+
     if opts.tree {
         pids = treeify_names(pids, &mut name_indent);
     } else {

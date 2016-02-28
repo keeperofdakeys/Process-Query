@@ -4,63 +4,120 @@ use std::io::{Read, BufReader};
 use error::{ProcError, ProcFile, ProcOper};
 use TaskId;
 
+/// A struct containing information from the stat file for a process.
+///
+/// This struct contains information from the /proc/[pid]/stat file
+/// for a specific pid.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PidStat {
+    /// The process id.
     pub pid: TaskId,
+    /// The filename of the executable.
     pub comm: String,
+    /// The process state.
     pub state: PidState,
+    /// The process id of the parent process.
     pub ppid: TaskId,
+    /// The process group id.
     pub pgrp: i32,
+    /// The session id of this process.
     pub session: i32,
+    /// The controlling tty of this process.
     pub tty_nr: i32,
+    /// The id of the process controlling the tty of this process.
     pub tpgid: i32,
+    /// The kernel flags of this processj.
     pub flags: u32,
+    /// Count of minor page faults not requiring disk access.
     pub minflt: u64,
+    /// Count of minor page faults in children we are waiting for.
     pub cminflt: u64,
+    /// Count of major page faults not requiring disk acceess.
     pub majflt: u64,
+    /// Count of major page faults in children we are waiting for.
     pub cmajflt: u64,
+    /// Amout of time this process has been scheduled in user mode.
     pub utime: u64,
+    /// Amount of time this process has been scheduled in kernel mode.
     pub stime: u64,
+    /// Amount of time children we are waiting for have been scheduled in user mode.
     pub cutime: i64,
+    /// Amount of time children we are waiting for have been scheduled in kernel mode.
     pub cstime: i64,
+    /// Priority of process.
     pub priority: i64,
+    /// Process nice value (19 low -> -20 high).
     pub nice: i64,
+    /// Number of threads this process is using.
     pub num_threads: i64,
+    /// Count of jiffies before we receive the next SIGALRM (0 since kernel 2.6.17).
     pub itrealvalue: i64,
+    /// The time the process started after boot (ticks since kernel 2.6).
     pub starttime: u64,
+    /// Virtual memory size in bytes.
     pub vsize: u64,
+    /// Resident set size in pages.
     pub rss: i64,
+    /// RSS soft limit of process.
     pub rsslim: u64,
+    /// Memory address where executable memory starts.
     pub startcode: u64,
+    /// Memory address where executable memory stops.
     pub endcode: u64,
+    /// The start address of the stack (ie: bottom).
     pub startstack: u64,
+    /// The current value of ESP (stack pointer).
     pub kstkesp: u64,
+    /// The current EIP (instruction pointer).
     pub kstkeip: u64,
+    /// The bitmap of pending signals, displayed as a decimal number.
     pub signal: u64,
+    /// The bitmap of blocked signals, displayed as a decimal number.
     pub blocked: u64,
+    /// The bitmap of ignored signals, displayed as a decimal number.
     pub sigignore: u64,
+    /// The bitmap of caught signals, displayed as a decimal number.
     pub sigcatch: u64,
+    /// This is the "channel" in which the process is waiting.
     pub wchan: u64,
+    /// Number of pages swapped (not maintained).
     pub nswap: u64,
+    /// Cumulative nswap for child processes (not maintained).
     pub cnswap: u64,
-    // These fields depend on kernel version (linux 2.1 -> 3.5), so wrap in Option
+    // These fields depend on kernel version (linux 2.1 -> 3.5), so wrap in Option.
+    /// Signal sent to the parent when we die.
     pub exit_signal: Option<i32>,
+    /// CPU number last executed on.
     pub processor: Option<i32>,
+    /// Real-time scheduling priority.
     pub rt_priority: Option<u32>,
+    /// Scheduling policy.
     pub policy: Option<u32>,
+    /// Aggregated block I/O delays, measured in clock ticks.
     pub delayacct_blkio_ticks: Option<u64>,
+    /// Time spent running a virtual CPU for a guest OS, in clock ticks.
     pub guest_time: Option<u64>,
+    /// Guest time of the process's children, in clock ticks.
     pub cguest_time: Option<i64>,
+    /// Address above which init'd and uninit'd (BSS) data is placed.
     pub start_data: Option<u64>,
+    /// Address below which init'd and uninit'd (BSS) data is placed.
     pub end_data: Option<u64>,
+    /// Address above which program heap can be expanded.
     pub start_brk: Option<u64>,
+    /// Address above which program cmdline args (arv) are placed.
     pub arg_start: Option<u64>,
+    /// Address below  which program cmdline args (arv) are placed.
     pub arg_end: Option<u64>,
+    /// Address above which program environment is placed.
     pub env_start: Option<u64>,
+    /// Address below which program environment is placed.
     pub env_end: Option<u64>,
+    /// The thread's exit status.
     pub exit_code: Option<i32>
 }
 
+/// Macro to parse a number, replacing errors with PidError.
 macro_rules! stat_parse_num {
     ($item:expr) =>
         (try!(
@@ -74,6 +131,7 @@ macro_rules! stat_parse_num {
         ))
 }
 
+/// Macro to parse an optional number, replacing errors with PidError.
 macro_rules! stat_parse_opt_num {
     ($item:expr) =>
         (match $item {
@@ -83,7 +141,7 @@ macro_rules! stat_parse_opt_num {
 }
 
 impl PidStat {
-    // Generate PidStat struct given a process directory
+    /// Generate PidStat struct given a process directory.
     pub fn new(pid_dir: &str) -> Result<Self, ProcError> {
         let file = try!(
             File::open(Path::new(pid_dir).join("stat"))
@@ -102,6 +160,7 @@ impl PidStat {
         Self::parse_string(bytes)
     }
 
+    /// Parse a String as a /proc/[pid]/stat file.
     fn parse_string(bytes: String) -> Result<Self, ProcError> {
         // /proc/.../stat is "numbers (prog_name) char numbers"
         // prog_name could have arbitrary characters, so we need to parse
@@ -201,20 +260,32 @@ impl PidStat {
     }
 }
 
+/// A list of states that a process can be in.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PidState {
+    /// Running
     Running,
+    /// Sleeping in an interruptible wait
     Sleeping,
+    /// Waiting in an uninterruptible disk sleep
     Waiting,
+    /// Zombie
     Zombie,
+    /// Stopped (on a signal) or (before LInux 2.6.33) trace stopped
     Stopped,
+    /// Tracing stop
     Tracing,
+    /// Dead
     Dead,
+    /// Wakekill
     Wakekill,
+    /// Waking
     Waking,
+    /// Parked
     Parked
 }
 
+/// Turn a char into an appropriate ProcState.
 fn get_procstate(state: &str) -> Option<PidState> {
     match state {
         "R" => Some(PidState::Running),
