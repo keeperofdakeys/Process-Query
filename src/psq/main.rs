@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::iter::repeat;
 use procrs::pid::*;
 use procrs::TaskId;
-use procrs::meminfo::MeminfoStatus;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
 fn main() {
@@ -41,6 +40,8 @@ fn main() {
                 true => name_indent.remove(&p.stat.pid).unwrap()
             };
 
+            // TODO: There is a lot of boiler plate for Option<num...>,
+            // this can probably be reduced with a custom type (row! calls to_string).
             match (long, perf) {
                 (false, false) => {
                     name.push_str(&p.stat.comm);
@@ -53,12 +54,14 @@ fn main() {
                             _ => &p.stat.comm
                         }
                     );
-                    row![p.stat.pid, p.stat.ppid, name]
+                    row![p.stat.pid, p.stat.ppid,  name]
                 },
                 (false, true) => {
                     name.push_str(&p.stat.comm);
-                    row![p.stat.pid, p.stat.ppid, name]
-                }
+                    row![p.stat.pid, p.stat.ppid,
+                        p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
+                        name]
+                },
                 (true, true) => {
                     name.push_str(
                         match p.cmdline.join(" ") {
@@ -66,7 +69,9 @@ fn main() {
                             _ => &p.stat.comm
                         }
                     );
-                    row![p.stat.pid, p.stat.ppid, name]
+                    row![p.stat.pid, p.stat.ppid,
+                        p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
+                        name]
                 }
             }
         }).collect::<Vec<_>>()
@@ -79,9 +84,9 @@ fn main() {
             (true, false) =>
                 row!["Pid", "Ppid", "Cmd"],
             (false, true) =>
-                row!["Pid", "Ppid", "Cmd"],
+                row!["Pid", "Ppid", "RSS", "Cmd"],
             (true, true) =>
-                row!["Pid", "Ppid", "Cmd"]
+                row!["Pid", "Ppid", "RSS", "Cmd"]
         }
     );
     table.set_format(
