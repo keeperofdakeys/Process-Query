@@ -2,6 +2,8 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::collections::HashMap;
+use std::num::ParseIntError;
+use std::str::FromStr;
 use ::error::{ProcError, ProcFile, ProcOper};
 use ::{TaskId, MemSize};
 
@@ -33,20 +35,35 @@ pub struct PidStatus {
     pub threads: u32
 }
 
-macro_rules! extract_line_opt {
-    ($map:expr, $key:expr, $func:expr) =>
-        ($map.remove($key)
-             // TODO: This should use .map instead
-            .and_then($func)
-        )
-}
-
+// Try removing key, if it's missing throw an error.
+// Then try parsing it, then returning a final value if no errors have occured.
 macro_rules! extract_line {
     ($map:expr, $key:expr, $func:expr) =>
         (try!(
-            extract_line_opt!($map, $key, $func)
-                .ok_or(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some($key)))
+            $map.remove($key)
+                .ok_or(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
+                    Some(concat!("missing ", $key)))
+                ).and_then(|s|
+                    $func(s).map_err(|e|
+                        ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+                            Some(e), Some($key))
+                    )
+                )
         ))
+}
+
+// Similar to extract_line, except that a missing field isn't an error.
+macro_rules! extract_line_opt {
+    ($map:expr, $key:expr, $func:expr) =>
+        (match $map.remove($key) {
+            Some(s) => Some(try!(
+                $func(s).map_err(|e|
+                    ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+                        Some(e), Some($key))
+                )
+            )),
+            None => None
+        })
 }
 
 impl PidStatus {
@@ -93,14 +110,14 @@ impl PidStatus {
         // It's quite important that these appear in the order that they
         // appear in the status file
         Ok(PidStatus{
-            name: extract_line!(status, "Name", |s| Some(s)),
-            tgid: extract_line!(status, "Tgid", |s| s.parse().ok()),
-            pid: extract_line!(status, "Pid", |s| s.parse().ok()),
-            ppid: extract_line!(status, "PPid", |s| s.parse().ok()),
-            tracerpid: extract_line!(status, "TracerPid", |s| s.parse().ok()),
+            name: extract_line!(status, "Name", |s| Ok(s) as Result<String, ProcError>),
+            tgid: extract_line!(status, "Tgid", parse_any),
+            pid: extract_line!(status, "Pid", parse_any),
+            ppid: extract_line!(status, "PPid", parse_any),
+            tracerpid: extract_line!(status, "TracerPid", parse_any),
             uid : extract_line!(status, "Uid", parse_uids),
             gid : extract_line!(status, "Gid", parse_uids),
-            fdsize : extract_line!(status, "FDSize", |s| s.parse().ok()),
+            fdsize : extract_line!(status, "FDSize", parse_any),
             vmpeak: extract_line_opt!(status, "VmPeak", parse_mem),
             vmsize: extract_line_opt!(status, "VmSize", parse_mem),
             vmlck: extract_line_opt!(status, "VmLck", parse_mem),
@@ -114,31 +131,38 @@ impl PidStatus {
             vmpmd: extract_line_opt!(status, "VmPMD", parse_mem),
             vmpte: extract_line_opt!(status, "VmPTE", parse_mem),
             vmswap: extract_line_opt!(status, "VmSwap", parse_mem),
-            threads: extract_line!(status, "Threads", |s| s.parse().ok())
+            threads: extract_line!(status, "Threads", parse_any)
         })
     }
 }
 
-// TODO: These should return a boxed error
+// Parse anything that's parsable (type checker didn't like simple closures).
+fn parse_any<N: FromStr>(str: String) -> Result<N, N::Err> {
+    str.parse()
+}
 
-fn parse_uids(uid_str: String) -> Option<(u32, u32, u32, u32)> {
-    let uids = match
+fn parse_uids(uid_str: String) -> Result<(u32, u32, u32, u32), ProcError> {
+    let uids = try!(
         uid_str.split("\t")
             .filter(|s| s != &"")
             .map(|s|
                 s.parse()
             ).collect::<Result<Vec<_>, _>>()
-            .ok()
-        {
-            Some(s) => s,
-            None => return None
-        };
+            .map_err(|e|
+                ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+                    Some(e), Some("parsing uid"))
+            )
+
+    );
     if uids.len() != 4 {
-        return None;
+        return Err(ProcError::new_more(ProcOper::ParsingField,
+            ProcFile::PidStatus, Some("missing uids")));
     }
-    Some((uids[0], uids[1], uids[2], uids[3]))
+    Ok((uids[0], uids[1], uids[2], uids[3]))
 }
 
-fn parse_mem(mem_str: String) -> Option<MemSize> {
-    Some(1)
+fn parse_mem(mem_str: String) -> Result<MemSize, ParseIntError> {
+    mem_str.trim_right_matches(" kB")
+        .parse::<MemSize>()
+        .map(|n| n * 1024)
 }
