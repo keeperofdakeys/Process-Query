@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::iter::repeat;
 use procrs::pid::*;
 use procrs::TaskId;
+use procrs::meminfo::MeminfoStatus;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
 fn main() {
@@ -46,7 +47,12 @@ fn main() {
                     row![p.stat.pid, p.stat.ppid, name]
                 },
                 (true, false) => {
-                    name.push_str(&p.cmdline.join(" "));
+                    name.push_str(
+                        match p.cmdline.join(" ") {
+                            ref s if s.len() > 0 => s,
+                            _ => &p.stat.comm
+                        }
+                    );
                     row![p.stat.pid, p.stat.ppid, name]
                 },
                 (false, true) => {
@@ -54,7 +60,12 @@ fn main() {
                     row![p.stat.pid, p.stat.ppid, name]
                 }
                 (true, true) => {
-                    name.push_str(&p.cmdline.join(" "));
+                    name.push_str(
+                        match p.cmdline.join(" ") {
+                            ref s if s.len() > 0 => s,
+                            _ => &p.stat.comm
+                        }
+                    );
                     row![p.stat.pid, p.stat.ppid, name]
                 }
             }
