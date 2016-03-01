@@ -185,11 +185,37 @@
 <span id="142">142</span>
 <span id="143">143</span>
 <span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fs</span>::<span class='ident'>File</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>io</span>::{<span class='ident'>BufReader</span>, <span class='ident'>BufRead</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>path</span>::<span class='ident'>Path</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>HashMap</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>::<span class='ident'>ParseIntError</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>str</span>::<span class='ident'>FromStr</span>;
 <span class='kw'>use</span> ::<span class='ident'>error</span>::{<span class='ident'>ProcError</span>, <span class='ident'>ProcFile</span>, <span class='ident'>ProcOper</span>};
 <span class='kw'>use</span> ::{<span class='ident'>TaskId</span>, <span class='ident'>MemSize</span>};
 
@@ -221,20 +247,35 @@
     <span class='kw'>pub</span> <span class='ident'>threads</span>: <span class='ident'>u32</span>
 }
 
-<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>extract_line_opt</span> {
-    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>:<span class='ident'>expr</span>) <span class='op'>=&gt;</span>
-        (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>.<span class='ident'>remove</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>)
-             <span class='comment'>// TODO: This should use .map instead</span>
-            .<span class='ident'>and_then</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>)
-        )
-}
-
+<span class='comment'>// Try removing key, if it&#39;s missing throw an error.</span>
+<span class='comment'>// Then try parsing it, then returning a final value if no errors have occured.</span>
 <span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>extract_line</span> {
     (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>:<span class='ident'>expr</span>) <span class='op'>=&gt;</span>
         (<span class='macro'>try</span><span class='macro'>!</span>(
-            <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>)
-                .<span class='ident'>ok_or</span>(<span class='ident'>ProcError</span>::<span class='ident'>new_more</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>, <span class='prelude-val'>Some</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>)))
+            <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>.<span class='ident'>remove</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>)
+                .<span class='ident'>ok_or</span>(<span class='ident'>ProcError</span>::<span class='ident'>new_more</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>,
+                    <span class='prelude-val'>Some</span>(<span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;missing &quot;</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>)))
+                ).<span class='ident'>and_then</span>(<span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span>
+                    <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>(<span class='ident'>s</span>).<span class='ident'>map_err</span>(<span class='op'>|</span><span class='ident'>e</span><span class='op'>|</span>
+                        <span class='ident'>ProcError</span>::<span class='ident'>new</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>,
+                            <span class='prelude-val'>Some</span>(<span class='ident'>e</span>), <span class='prelude-val'>Some</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>))
+                    )
+                )
         ))
+}
+
+<span class='comment'>// Similar to extract_line, except that a missing field isn&#39;t an error.</span>
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>extract_line_opt</span> {
+    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>:<span class='ident'>expr</span>) <span class='op'>=&gt;</span>
+        (<span class='kw'>match</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>map</span>.<span class='ident'>remove</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>) {
+            <span class='prelude-val'>Some</span>(<span class='ident'>s</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(<span class='macro'>try</span><span class='macro'>!</span>(
+                <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>func</span>(<span class='ident'>s</span>).<span class='ident'>map_err</span>(<span class='op'>|</span><span class='ident'>e</span><span class='op'>|</span>
+                    <span class='ident'>ProcError</span>::<span class='ident'>new</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>,
+                        <span class='prelude-val'>Some</span>(<span class='ident'>e</span>), <span class='prelude-val'>Some</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>key</span>))
+                )
+            )),
+            <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>
+        })
 }
 
 <span class='kw'>impl</span> <span class='ident'>PidStatus</span> {
@@ -281,14 +322,14 @@
         <span class='comment'>// It&#39;s quite important that these appear in the order that they</span>
         <span class='comment'>// appear in the status file</span>
         <span class='prelude-val'>Ok</span>(<span class='ident'>PidStatus</span>{
-            <span class='ident'>name</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Name&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='prelude-val'>Some</span>(<span class='ident'>s</span>)),
-            <span class='ident'>tgid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Tgid&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>()),
-            <span class='ident'>pid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Pid&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>()),
-            <span class='ident'>ppid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;PPid&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>()),
-            <span class='ident'>tracerpid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;TracerPid&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>()),
+            <span class='ident'>name</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Name&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='prelude-val'>Ok</span>(<span class='ident'>s</span>) <span class='kw'>as</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>String</span>, <span class='ident'>ProcError</span><span class='op'>&gt;</span>),
+            <span class='ident'>tgid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Tgid&quot;</span>, <span class='ident'>parse_any</span>),
+            <span class='ident'>pid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Pid&quot;</span>, <span class='ident'>parse_any</span>),
+            <span class='ident'>ppid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;PPid&quot;</span>, <span class='ident'>parse_any</span>),
+            <span class='ident'>tracerpid</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;TracerPid&quot;</span>, <span class='ident'>parse_any</span>),
             <span class='ident'>uid</span> : <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Uid&quot;</span>, <span class='ident'>parse_uids</span>),
             <span class='ident'>gid</span> : <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Gid&quot;</span>, <span class='ident'>parse_uids</span>),
-            <span class='ident'>fdsize</span> : <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;FDSize&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>()),
+            <span class='ident'>fdsize</span> : <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;FDSize&quot;</span>, <span class='ident'>parse_any</span>),
             <span class='ident'>vmpeak</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmPeak&quot;</span>, <span class='ident'>parse_mem</span>),
             <span class='ident'>vmsize</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmSize&quot;</span>, <span class='ident'>parse_mem</span>),
             <span class='ident'>vmlck</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmLck&quot;</span>, <span class='ident'>parse_mem</span>),
@@ -302,33 +343,40 @@
             <span class='ident'>vmpmd</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmPMD&quot;</span>, <span class='ident'>parse_mem</span>),
             <span class='ident'>vmpte</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmPTE&quot;</span>, <span class='ident'>parse_mem</span>),
             <span class='ident'>vmswap</span>: <span class='macro'>extract_line_opt</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;VmSwap&quot;</span>, <span class='ident'>parse_mem</span>),
-            <span class='ident'>threads</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Threads&quot;</span>, <span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>())
+            <span class='ident'>threads</span>: <span class='macro'>extract_line</span><span class='macro'>!</span>(<span class='ident'>status</span>, <span class='string'>&quot;Threads&quot;</span>, <span class='ident'>parse_any</span>)
         })
     }
 }
 
-<span class='comment'>// TODO: These should return a boxed error</span>
+<span class='comment'>// Parse anything that&#39;s parsable (type checker didn&#39;t like simple closures).</span>
+<span class='kw'>fn</span> <span class='ident'>parse_any</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>FromStr</span><span class='op'>&gt;</span>(<span class='ident'>str</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>N</span>::<span class='prelude-val'>Err</span><span class='op'>&gt;</span> {
+    <span class='ident'>str</span>.<span class='ident'>parse</span>()
+}
 
-<span class='kw'>fn</span> <span class='ident'>parse_uids</span>(<span class='ident'>uid_str</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>u32</span>, <span class='ident'>u32</span>, <span class='ident'>u32</span>, <span class='ident'>u32</span>)<span class='op'>&gt;</span> {
-    <span class='kw'>let</span> <span class='ident'>uids</span> <span class='op'>=</span> <span class='kw'>match</span>
+<span class='kw'>fn</span> <span class='ident'>parse_uids</span>(<span class='ident'>uid_str</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(<span class='ident'>u32</span>, <span class='ident'>u32</span>, <span class='ident'>u32</span>, <span class='ident'>u32</span>), <span class='ident'>ProcError</span><span class='op'>&gt;</span> {
+    <span class='kw'>let</span> <span class='ident'>uids</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(
         <span class='ident'>uid_str</span>.<span class='ident'>split</span>(<span class='string'>&quot;\t&quot;</span>)
             .<span class='ident'>filter</span>(<span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span> <span class='ident'>s</span> <span class='op'>!=</span> <span class='kw-2'>&amp;</span><span class='string'>&quot;&quot;</span>)
             .<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>s</span><span class='op'>|</span>
                 <span class='ident'>s</span>.<span class='ident'>parse</span>()
             ).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span>_<span class='op'>&gt;</span>, _<span class='op'>&gt;&gt;</span>()
-            .<span class='ident'>ok</span>()
-        {
-            <span class='prelude-val'>Some</span>(<span class='ident'>s</span>) <span class='op'>=&gt;</span> <span class='ident'>s</span>,
-            <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='prelude-val'>None</span>
-        };
+            .<span class='ident'>map_err</span>(<span class='op'>|</span><span class='ident'>e</span><span class='op'>|</span>
+                <span class='ident'>ProcError</span>::<span class='ident'>new</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>,
+                    <span class='prelude-val'>Some</span>(<span class='ident'>e</span>), <span class='prelude-val'>Some</span>(<span class='string'>&quot;parsing uid&quot;</span>))
+            )
+
+    );
     <span class='kw'>if</span> <span class='ident'>uids</span>.<span class='ident'>len</span>() <span class='op'>!=</span> <span class='number'>4</span> {
-        <span class='kw'>return</span> <span class='prelude-val'>None</span>;
+        <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>ProcError</span>::<span class='ident'>new_more</span>(<span class='ident'>ProcOper</span>::<span class='ident'>ParsingField</span>,
+            <span class='ident'>ProcFile</span>::<span class='ident'>PidStatus</span>, <span class='prelude-val'>Some</span>(<span class='string'>&quot;missing uids&quot;</span>)));
     }
-    <span class='prelude-val'>Some</span>((<span class='ident'>uids</span>[<span class='number'>0</span>], <span class='ident'>uids</span>[<span class='number'>1</span>], <span class='ident'>uids</span>[<span class='number'>2</span>], <span class='ident'>uids</span>[<span class='number'>3</span>]))
+    <span class='prelude-val'>Ok</span>((<span class='ident'>uids</span>[<span class='number'>0</span>], <span class='ident'>uids</span>[<span class='number'>1</span>], <span class='ident'>uids</span>[<span class='number'>2</span>], <span class='ident'>uids</span>[<span class='number'>3</span>]))
 }
 
-<span class='kw'>fn</span> <span class='ident'>parse_mem</span>(<span class='ident'>mem_str</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MemSize</span><span class='op'>&gt;</span> {
-    <span class='prelude-val'>Some</span>(<span class='number'>1</span>)
+<span class='kw'>fn</span> <span class='ident'>parse_mem</span>(<span class='ident'>mem_str</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>MemSize</span>, <span class='ident'>ParseIntError</span><span class='op'>&gt;</span> {
+    <span class='ident'>mem_str</span>.<span class='ident'>trim_right_matches</span>(<span class='string'>&quot; kB&quot;</span>)
+        .<span class='ident'>parse</span>::<span class='op'>&lt;</span><span class='ident'>MemSize</span><span class='op'>&gt;</span>()
+        .<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>n</span><span class='op'>|</span> <span class='ident'>n</span> <span class='op'>*</span> <span class='number'>1024</span>)
 }
 </pre>
 </section>
