@@ -60,6 +60,7 @@ fn main() {
                     name.push_str(&p.stat.comm);
                     row![p.stat.pid, p.stat.ppid,
                         p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
+                        p.stat.utime,
                         name]
                 },
                 (true, true) => {
@@ -71,6 +72,7 @@ fn main() {
                     );
                     row![p.stat.pid, p.stat.ppid,
                         p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
+                        p.stat.utime,
                         name]
                 }
             }
@@ -84,9 +86,9 @@ fn main() {
             (true, false) =>
                 row!["Pid", "Ppid", "Cmd"],
             (false, true) =>
-                row!["Pid", "Ppid", "RSS", "Cmd"],
+                row!["Pid", "Ppid", "RSS", "Time", "Cmd"],
             (true, true) =>
-                row!["Pid", "Ppid", "RSS", "Cmd"]
+                row!["Pid", "Ppid", "RSS", "Time", "Cmd"]
         }
     );
     table.set_format(
