@@ -26,7 +26,7 @@ impl From<io::Error> for MeminfoError {
 }
 
 #[derive(Debug)]
-pub struct MeminfoStatus {
+pub struct Meminfo {
     pub memtotal: u64,
     pub memfree: u64,
     pub memavailable: u64,
@@ -71,6 +71,9 @@ pub struct MeminfoStatus {
     pub directmap4k: u64,
     pub directmap2m: u64,
     pub directmap1g: u64,
+    pub mainused: u64,
+    pub maincached: u64,
+    pub mainswapused: u64,
 }
 
 
@@ -78,7 +81,7 @@ pub struct MeminfoStatus {
 ///
 /// # Examples
 
-impl MeminfoStatus {
+impl Meminfo {
     pub fn new() -> Result<Self, MeminfoError> {
         // Create an interim hashmap
         // Read the file?
@@ -88,7 +91,26 @@ impl MeminfoStatus {
         let lines = try!(io::BufReader::new(minfo_file)
             .lines() // We have a Lines of many Result<&str>
             .collect::<Result<Vec<_>, _>>()); // This line makes Result<vec<&str>> Or result<err>
-        let hmap = try!(lines.iter().map(|line| Self::parse_line(line)).collect::<Result<HashMap<_, _>, _>>()  );
+        let mut hmap = try!(lines.iter().map(|line| Self::parse_line(line)).collect::<Result<HashMap<_, _>, _>>()  );
+        //  Calculate some of the other values
+        // kb_main_used = kb_main_total - kb_main_free - kb_main_cached - kb_main_buffe
+        let total = hmap.get("MemTotal").unwrap().clone();
+        let free = hmap.get("MemFree").unwrap().clone();
+        let cached = hmap.get("Cached").unwrap().clone();
+        let buffer = hmap.get("Buffers").unwrap().clone();
+        let used = total - free - cached - buffer;
+        hmap.insert("MainUsed".to_owned(), used);
+
+        // kb_main_cached = kb_page_cache + kb_slab
+        let page_cache = hmap.get("Cached").unwrap().clone();
+        let slab = hmap.get("Slab").unwrap().clone();
+        hmap.insert("MainCached".to_owned(), (page_cache + slab) );
+
+        // kb_swap_used = kb_swap_total - kb_swap_free
+        let swap_total = hmap.get("SwapTotal").unwrap().clone();
+        let swap_free = hmap.get("SwapFree").unwrap().clone();
+        hmap.insert("MainSwapUsed".to_owned(), (swap_total - swap_free));
+
         // Populate the results
         Self::build_minfo(hmap)
     }
@@ -104,9 +126,9 @@ impl MeminfoStatus {
     }
 
     //This then takes the values out and puts them into an minfo
-    fn build_minfo(hmap: HashMap<String, u64>) -> Result<MeminfoStatus, MeminfoError> {
+    fn build_minfo(hmap: HashMap<String, u64>) -> Result<Meminfo, MeminfoError> {
         // REALLY REALLY improve this handling of Option types ...
-        let minfo = MeminfoStatus {
+        let minfo = Meminfo {
             memtotal: hmap.get("MemTotal").unwrap().clone(),
             memfree: hmap.get("MemFree").unwrap().clone(),
             memavailable: hmap.get("MemAvailable").unwrap().clone(),
@@ -151,6 +173,9 @@ impl MeminfoStatus {
             directmap4k: hmap.get("DirectMap4k").unwrap().clone(),
             directmap2m: hmap.get("DirectMap2M").unwrap().clone(),
             directmap1g: hmap.get("DirectMap1G").unwrap().clone(),
+            mainused: hmap.get("MainUsed").unwrap().clone(),
+            maincached: hmap.get("MainCached").unwrap().clone(),
+            mainswapused: hmap.get("MainSwapUsed").unwrap().clone(),
         };
         Ok(minfo)
     }
@@ -158,7 +183,7 @@ impl MeminfoStatus {
 }
 
 
-impl fmt::Display for MeminfoStatus {
+impl fmt::Display for Meminfo {
     // make a display method to dump the whole struct
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // This won't be nice for all the values we have ...
