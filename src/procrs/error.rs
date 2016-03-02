@@ -179,15 +179,15 @@ impl Error for ProcError {
 impl fmt::Debug for ProcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let more = self.more.unwrap_or("");
-        let error;
         if let Some(e) = self.inner.as_ref() {
-            error = e.description();
+            write!(f, "error {} ({}) from {}: {}",
+                self.operation.description(), more,
+                self.file.description(), e)
         } else {
-            error = "";
+            write!(f, "error {} ({}) from {}",
+                self.operation.description(), more,
+                self.file.description())
         }
-        write!(f, "error {} ({}) from {}: {}",
-            self.operation.description(), more,
-            self.file.description(), error)
     }
 }
 

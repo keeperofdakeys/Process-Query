@@ -7,7 +7,7 @@ use std::str::FromStr;
 use ::error::{ProcError, ProcFile, ProcOper};
 use ::{TaskId, MemSize};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PidStatus {
     pub name: String,
     pub tgid: TaskId,
@@ -99,7 +99,7 @@ impl PidStatus {
                                     Ok((key.trim().to_owned(),
                                          value.trim().to_owned())),
                                 _ => Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStatus,
-                                             Some("No colon on line")))
+                                             Some("Line missing colon")))
                             }
                         },
                         Err(e) => Err(e)
@@ -165,4 +165,141 @@ fn parse_mem(mem_str: String) -> Result<MemSize, ParseIntError> {
     mem_str.trim_right_matches(" kB")
         .parse::<MemSize>()
         .map(|n| n * 1024)
+}
+
+#[test]
+fn test_no_colon() {
+    let lines = "Name".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStatus, Some("Line missing colon")))
+    );
+}
+
+#[test]
+fn test_missing_tgid() {
+    let lines = "Name: a\n\
+                 Pid: 4\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("missing Tgid")))
+    );
+}
+
+#[test]
+fn test_uid_parse() {
+    let lines = "Name:	bash\n\
+                 Tgid:	27899\n\
+                 Ngid:	0\n\
+                 Pid:	27899\n\
+                 PPid:	4351\n\
+                 TracerPid:	0\n\
+                 Uid:	1000	1000	a000	1000\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+            Some("a".parse::<u8>().unwrap_err()), Some("Uid")))
+    );
+}
+
+#[test]
+fn test_uid_count() {
+    let lines = "Name:	bash\n\
+                 Tgid:	27899\n\
+                 Ngid:	0\n\
+                 Pid:	27899\n\
+                 PPid:	4351\n\
+                 TracerPid:	0\n\
+                 Uid:	1000	1000	1000\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Uid")))
+    );
+}
+
+#[test]
+fn test_mem_parse() {
+    let lines = "Name:	bash\n\
+                 Tgid:	27899\n\
+                 Ngid:	0\n\
+                 Pid:	27899\n\
+                 PPid:	4351\n\
+                 TracerPid:	0\n\
+                 Uid:	1000	1000	1000	1000\n\
+                 Gid:	1000	1000	1000	1000\n\
+                 FDSize:	256\n\
+                 Groups:	10 18 27 35 101 103 104 105 250 1000 1001 \n\
+                 NStgid:	27899\n\
+                 NSpid:	27899\n\
+                 NSpgid:	27899\n\
+                 NSsid:	27899\n\
+                 VmPeak:	   a0896 kB\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+            Some("a".parse::<u8>().unwrap_err()), Some("VmPeak")))
+    );
+}
+
+#[test]
+fn test_parsing() {
+    let lines = "Name:	bash\n\
+                 Tgid:	27899\n\
+                 Pid:	27899\n\
+                 PPid:	4351\n\
+                 TracerPid:	0\n\
+                 Uid:	1000	1000	1000	1000\n\
+                 Gid:	1000	1000	1000	1000\n\
+                 FDSize:	256\n\
+                 Groups:	10 18 27 35 101 103 104 105 250 1000 1001 \n\
+                 NStgid:	27899\n\
+                 NSpid:	27899\n\
+                 NSpgid:	27899\n\
+                 NSsid:	27899\n\
+                 VmPeak:	   20896 kB\n\
+                 VmSize:	   20868 kB\n\
+                 VmLck:	       0 kB\n\
+                 VmPin:	       0 kB\n\
+                 VmHWM:	    4584 kB\n\
+                 VmRSS:	    4584 kB\n\
+                 VmData:	    1176 kB\n\
+                 VmStk:	     136 kB\n\
+                 VmExe:	     688 kB\n\
+                 VmLib:	    2540 kB\n\
+                 VmPTE:	      64 kB\n\
+                 VmPMD:	      12 kB\n\
+                 VmSwap:	       0 kB\n\
+                 Threads:	1\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Ok(PidStatus {
+            name: "bash".to_owned(),
+            tgid: 27899,
+            pid: 27899,
+            ppid: 4351,
+            tracerpid: 0,
+            uid: (1000, 1000, 1000, 1000),
+            gid: (1000, 1000, 1000, 1000),
+            fdsize: 256,
+            vmpeak: Some(21397504),
+            vmsize: Some(21368832),
+            vmlck: Some(0),
+            vmpin: Some(0),
+            vmhwm: Some(4694016),
+            vmrss: Some(4694016),
+            vmdata: Some(1204224),
+            vmstk: Some(139264),
+            vmexe: Some(704512),
+            vmlib: Some(2600960),
+            vmpte: Some(65536),
+            vmpmd: Some(12288),
+            vmswap: Some(0),
+            threads: 1
+        })
+    );
 }
