@@ -213,6 +213,31 @@
 <span id="170">170</span>
 <span id="171">171</span>
 <span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fs</span>::<span class='ident'>File</span>;
@@ -242,7 +267,7 @@
 }
 
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>MeminfoStatus</span> {
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Meminfo</span> {
     <span class='kw'>pub</span> <span class='ident'>memtotal</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>memfree</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>memavailable</span>: <span class='ident'>u64</span>,
@@ -287,6 +312,9 @@
     <span class='kw'>pub</span> <span class='ident'>directmap4k</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>directmap2m</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>directmap1g</span>: <span class='ident'>u64</span>,
+    <span class='kw'>pub</span> <span class='ident'>mainused</span>: <span class='ident'>u64</span>,
+    <span class='kw'>pub</span> <span class='ident'>maincached</span>: <span class='ident'>u64</span>,
+    <span class='kw'>pub</span> <span class='ident'>mainswapused</span>: <span class='ident'>u64</span>,
 }
 
 
@@ -294,7 +322,7 @@
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// # Examples</span>
 
-<span class='kw'>impl</span> <span class='ident'>MeminfoStatus</span> {
+<span class='kw'>impl</span> <span class='ident'>Meminfo</span> {
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>() <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>MeminfoError</span><span class='op'>&gt;</span> {
         <span class='comment'>// Create an interim hashmap</span>
         <span class='comment'>// Read the file?</span>
@@ -304,7 +332,26 @@
         <span class='kw'>let</span> <span class='ident'>lines</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>new</span>(<span class='ident'>minfo_file</span>)
             .<span class='ident'>lines</span>() <span class='comment'>// We have a Lines of many Result&lt;&amp;str&gt;</span>
             .<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span>_<span class='op'>&gt;</span>, _<span class='op'>&gt;&gt;</span>()); <span class='comment'>// This line makes Result&lt;vec&lt;&amp;str&gt;&gt; Or result&lt;err&gt;</span>
-        <span class='kw'>let</span> <span class='ident'>hmap</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>lines</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>line</span><span class='op'>|</span> <span class='ident'>Self</span>::<span class='ident'>parse_line</span>(<span class='ident'>line</span>)).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>HashMap</span><span class='op'>&lt;</span>_, _<span class='op'>&gt;</span>, _<span class='op'>&gt;&gt;</span>()  );
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>hmap</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>lines</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>line</span><span class='op'>|</span> <span class='ident'>Self</span>::<span class='ident'>parse_line</span>(<span class='ident'>line</span>)).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>HashMap</span><span class='op'>&lt;</span>_, _<span class='op'>&gt;</span>, _<span class='op'>&gt;&gt;</span>()  );
+        <span class='comment'>//  Calculate some of the other values</span>
+        <span class='comment'>// kb_main_used = kb_main_total - kb_main_free - kb_main_cached - kb_main_buffe</span>
+        <span class='kw'>let</span> <span class='ident'>total</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MemTotal&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>free</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MemFree&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>cached</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;Cached&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>buffer</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;Buffers&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>used</span> <span class='op'>=</span> <span class='ident'>total</span> <span class='op'>-</span> <span class='ident'>free</span> <span class='op'>-</span> <span class='ident'>cached</span> <span class='op'>-</span> <span class='ident'>buffer</span>;
+        <span class='ident'>hmap</span>.<span class='ident'>insert</span>(<span class='string'>&quot;MainUsed&quot;</span>.<span class='ident'>to_owned</span>(), <span class='ident'>used</span>);
+
+        <span class='comment'>// kb_main_cached = kb_page_cache + kb_slab</span>
+        <span class='kw'>let</span> <span class='ident'>page_cache</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;Cached&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>slab</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;Slab&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='ident'>hmap</span>.<span class='ident'>insert</span>(<span class='string'>&quot;MainCached&quot;</span>.<span class='ident'>to_owned</span>(), (<span class='ident'>page_cache</span> <span class='op'>+</span> <span class='ident'>slab</span>) );
+
+        <span class='comment'>// kb_swap_used = kb_swap_total - kb_swap_free</span>
+        <span class='kw'>let</span> <span class='ident'>swap_total</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;SwapTotal&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>swap_free</span> <span class='op'>=</span> <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;SwapFree&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>();
+        <span class='ident'>hmap</span>.<span class='ident'>insert</span>(<span class='string'>&quot;MainSwapUsed&quot;</span>.<span class='ident'>to_owned</span>(), (<span class='ident'>swap_total</span> <span class='op'>-</span> <span class='ident'>swap_free</span>));
+
         <span class='comment'>// Populate the results</span>
         <span class='ident'>Self</span>::<span class='ident'>build_minfo</span>(<span class='ident'>hmap</span>)
     }
@@ -320,9 +367,9 @@
     }
 
     <span class='comment'>//This then takes the values out and puts them into an minfo</span>
-    <span class='kw'>fn</span> <span class='ident'>build_minfo</span>(<span class='ident'>hmap</span>: <span class='ident'>HashMap</span><span class='op'>&lt;</span><span class='ident'>String</span>, <span class='ident'>u64</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>MeminfoStatus</span>, <span class='ident'>MeminfoError</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>build_minfo</span>(<span class='ident'>hmap</span>: <span class='ident'>HashMap</span><span class='op'>&lt;</span><span class='ident'>String</span>, <span class='ident'>u64</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Meminfo</span>, <span class='ident'>MeminfoError</span><span class='op'>&gt;</span> {
         <span class='comment'>// REALLY REALLY improve this handling of Option types ...</span>
-        <span class='kw'>let</span> <span class='ident'>minfo</span> <span class='op'>=</span> <span class='ident'>MeminfoStatus</span> {
+        <span class='kw'>let</span> <span class='ident'>minfo</span> <span class='op'>=</span> <span class='ident'>Meminfo</span> {
             <span class='ident'>memtotal</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MemTotal&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>memfree</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MemFree&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>memavailable</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MemAvailable&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
@@ -367,6 +414,9 @@
             <span class='ident'>directmap4k</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap4k&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>directmap2m</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap2M&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>directmap1g</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap1G&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
+            <span class='ident'>mainused</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainUsed&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
+            <span class='ident'>maincached</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainCached&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
+            <span class='ident'>mainswapused</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainSwapUsed&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
         };
         <span class='prelude-val'>Ok</span>(<span class='ident'>minfo</span>)
     }
@@ -374,7 +424,7 @@
 }
 
 
-<span class='kw'>impl</span> <span class='ident'>fmt</span>::<span class='ident'>Display</span> <span class='kw'>for</span> <span class='ident'>MeminfoStatus</span> {
+<span class='kw'>impl</span> <span class='ident'>fmt</span>::<span class='ident'>Display</span> <span class='kw'>for</span> <span class='ident'>Meminfo</span> {
     <span class='comment'>// make a display method to dump the whole struct</span>
     <span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>f</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>fmt</span>::<span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='ident'>fmt</span>::<span class='prelude-ty'>Result</span> {
         <span class='comment'>// This won&#39;t be nice for all the values we have ...</span>

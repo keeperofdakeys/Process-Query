@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["MeminfoError",""]],"struct":[["MeminfoStatus",""]]});
+initSidebarItems({"enum":[["MeminfoError",""]],"struct":[["Meminfo",""]]});
