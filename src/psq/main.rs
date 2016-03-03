@@ -32,48 +32,51 @@ fn main() {
     } else {
         pids.sort_by(|p1, p2| p1.stat.pid.cmp(&p2.stat.pid));
     };
+    // Assume hertz is 100.
+    // TODO: Look this up via syscall (no /proc value for it)
+    let hertz = 100;
+    let minute_hertz = hertz * 60;
+    let hour_hertz = minute_hertz * 60;
 
     let mut table = Table::init(
         pids.iter().map(|p| {
+            // When we have a tree, the name is prepended with an indent.
             let mut name = match tree {
                 false => String::new(),
                 true => name_indent.remove(&p.stat.pid).unwrap()
             };
 
-            // TODO: There is a lot of boiler plate for Option<num...>,
-            // this can probably be reduced with a custom type (row! calls to_string).
+            // For long output, try using the cmdline first.
+            // FIXME: Sometimes prog_name != cmdline[0].
+            if !long {
+                name.push_str(&p.stat.comm);
+            } else {
+                let cmdline = p.cmdline.join(" ");
+                name.push_str(
+                    match cmdline {
+                         ref s if s.len() > 0 => s,
+                        _ => &p.stat.comm
+                    }
+                );
+            }
+
             match (long, perf) {
-                (false, false) => {
-                    name.push_str(&p.stat.comm);
+                (_, false) => {
                     row![p.stat.pid, p.stat.ppid, name]
                 },
-                (true, false) => {
-                    name.push_str(
-                        match p.cmdline.join(" ") {
-                            ref s if s.len() > 0 => s,
-                            _ => &p.stat.comm
-                        }
+                (_, true) => {
+                    let rss = p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned());
+                    // FIXME: This algorithm is definitely wrong
+                    let second_utime = p.stat.utime % hertz;
+                    let minute_utime = p.stat.utime / minute_hertz;
+                    let hour_utime = p.stat.utime / hour_hertz;
+                    let utime = format!(
+                        "{:02}:{:02}:{:02}",
+                        hour_utime,
+                        minute_utime,
+                        second_utime
                     );
-                    row![p.stat.pid, p.stat.ppid,  name]
-                },
-                (false, true) => {
-                    name.push_str(&p.stat.comm);
-                    row![p.stat.pid, p.stat.ppid,
-                        p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
-                        p.stat.utime,
-                        name]
-                },
-                (true, true) => {
-                    name.push_str(
-                        match p.cmdline.join(" ") {
-                            ref s if s.len() > 0 => s,
-                            _ => &p.stat.comm
-                        }
-                    );
-                    row![p.stat.pid, p.stat.ppid,
-                        p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned()),
-                        p.stat.utime,
-                        name]
+                    row![p.stat.pid, p.stat.ppid, rss, utime, name]
                 }
             }
         }).collect::<Vec<_>>()
