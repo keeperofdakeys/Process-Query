@@ -35,8 +35,8 @@ fn main() {
     // Assume hertz is 100.
     // TODO: Look this up via syscall (no /proc value for it)
     let hertz = 100;
-    // let minute_hertz = hertz * 60;
-    // let hour_hertz = minute_hertz * 60;
+    let minute_hertz = hertz * 60;
+    let hour_hertz = minute_hertz * 60;
 
     let mut table = Table::init(
         pids.iter().map(|p| {
@@ -66,19 +66,17 @@ fn main() {
                 },
                 (_, true) => {
                     let rss = p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned());
-                    // FIXME: This algorithm is definitely wrong
-                    let _second_utime = p.stat.utime / hertz;
-                    let second_utime = _second_utime % 60;
-                    let _minute_utime = _second_utime / 60;
-                    let minute_utime = _minute_utime % 60;
-                    let hour_utime = _minute_utime / 60;
-                    let utime = format!(
+                    let raw_time = p.stat.utime + p.stat.stime;
+                    let second_utime = raw_time / hertz % 60;
+                    let minute_utime = raw_time / minute_hertz % 60;
+                    let hour_utime = raw_time / hour_hertz % 60;
+                    let cputime = format!(
                         "{:02}:{:02}:{:02}",
                         hour_utime,
                         minute_utime,
                         second_utime
                     );
-                    row![p.stat.pid, p.stat.ppid, rss, utime, name]
+                    row![p.stat.pid, p.stat.ppid, rss, cputime, name]
                 }
             }
         }).collect::<Vec<_>>()
