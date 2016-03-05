@@ -180,7 +180,7 @@ impl Iterator for PidIter {
     fn next(&mut self) -> Option<Self::Item> {
         for entry in self.dir_iter.by_ref() {
             match Self::proc_dir_filter(entry, &self.query) {
-                Some(p) => return Some(p),
+                some @ Some(_) => return some,
                 None => continue
             }
         }
