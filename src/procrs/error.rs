@@ -29,7 +29,11 @@ pub enum ProcFile {
     /// /proc/[pid]/stat file, contains various stats about the process.
     PidStat,
     /// /proc/[pid]/cmdline file, contains the cmdline given when starting the process.
-    PidCmdline
+    PidCmdline,
+
+    // TODO: Attach a pid to this directory
+    /// /proc/[pid]/task directory, contains threads of a process.
+    PidTaskDir,
 }
 
 impl Error for ProcFile {
@@ -45,7 +49,8 @@ impl Error for ProcFile {
             ProcFile::PidDir => "/proc/[pid] directory",
             ProcFile::PidStatus => "/proc/[pid]/status file",
             ProcFile::PidStat => "/proc/[pid]/stat file",
-            ProcFile::PidCmdline => "/proc/[pid]/cmdline file"
+            ProcFile::PidCmdline => "/proc/[pid]/cmdline file",
+            ProcFile::PidTaskDir => "/proc/[pid]/task",
         }
     }
 

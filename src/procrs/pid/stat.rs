@@ -142,9 +142,9 @@ macro_rules! stat_parse_opt_num {
 
 impl PidStat {
     /// Generate PidStat struct given a process directory.
-    pub fn new(pid_dir: &str) -> Result<Self, ProcError> {
+    pub fn new(pid_dir: &Path) -> Result<Self, ProcError> {
         let file = try!(
-            File::open(Path::new(pid_dir).join("stat"))
+            File::open(pid_dir.join("stat"))
                 .map_err(|e|
                     ProcError::new_err(ProcOper::Opening, ProcFile::PidStat, e)
                 )

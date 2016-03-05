@@ -7,6 +7,7 @@ use prettytable::row::Row;
 use prettytable::format::FormatBuilder;
 use std::collections::HashMap;
 use std::iter::repeat;
+use std::cmp::Ordering;
 use procrs::pid::*;
 use procrs::TaskId;
 use argparse::{ArgumentParser, StoreTrue, Store};
@@ -16,9 +17,18 @@ fn main() {
     let (query, long, perf, verbose, tree, threads) =
         (opts.query, opts.long, opts.perf, opts.verbose, opts.tree, opts.threads);
 
-    let pid_iter = PidIter::new_query(query);
-    let mut pids = pid_iter.unwrap()
-        .collect::<Result<Vec<_>, _>>().unwrap();
+    let mut pids: Vec<_> = match threads {
+        false => {
+            PidIter::new_query(query)
+                .unwrap()
+                .collect::<Result<_, _>>().unwrap()
+        },
+        true => {
+            TidIter::new_query(query)
+                .unwrap()
+                .collect::<Result<_, _>>().unwrap()
+        }
+    };
 
     let mut name_indent = HashMap::new();
 
@@ -32,7 +42,16 @@ fn main() {
     if opts.tree {
         pids = treeify_names(pids, &mut name_indent);
     } else {
-        pids.sort_by(|p1, p2| p1.stat.pid.cmp(&p2.stat.pid));
+        pids.sort_by(|p1, p2| 
+            match threads {
+                false => p1.stat.pid.cmp(&p2.stat.pid),
+                true => {
+                    let cmp = p1.status.tgid.cmp(&p2.status.tgid);
+                    if let Ordering::Equal = cmp { return Ordering::Equal; }
+                    p1.stat.pid.cmp(&p2.stat.pid)
+                }
+            }
+        );
     };
     // Assume hertz is 100.
     // TODO: Look this up via syscall (no /proc value for it)
@@ -71,10 +90,10 @@ fn main() {
                 }
             };
             row.push(cell!(p.stat.ppid));
+            if long {
+            }
             match (long, perf) {
-                (_, false) => {
-                    row.push(cell!(name));
-                },
+                (_, false) => {},
                 (_, true) => {
                     let rss = p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned());
                     let raw_time = p.stat.utime + p.stat.stime;
@@ -101,11 +120,12 @@ fn main() {
     if threads {
         titles.push(cell!("Tid"));
     }
+    titles.push(cell!("Ppid"));
     // TODO: Possible remove Ppid from when long is false,
     // and have Cmd/Args as separate columns for long.
     match (long, perf) {
         (_, false) =>
-            titles.extend_from_slice(&[cell!("Ppid"), cell!("Cmd")]),
+            titles.extend_from_slice(&[cell!("Cmd")]),
         (_, true) =>
             titles.extend_from_slice(&[cell!("RSS"), cell!("Time"), cell!("Cmd")])
     };

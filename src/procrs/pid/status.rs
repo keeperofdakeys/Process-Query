@@ -68,10 +68,10 @@ macro_rules! extract_line_opt {
 
 impl PidStatus {
     // Generate PidStatus struct given a process directory
-    pub fn new(pid_dir: &str) -> Result<Self, ProcError> {
+    pub fn new(pid_dir: &Path) -> Result<Self, ProcError> {
         // Try opening file
         let status_file = try!(
-            File::open(Path::new(pid_dir).join("status"))
+            File::open(pid_dir.join("status"))
                 .map_err(|e| ProcError::new_err(ProcOper::Opening, ProcFile::PidStatus, e))
         );
 
