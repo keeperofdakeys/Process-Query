@@ -3,6 +3,7 @@ extern crate argparse;
 #[macro_use]
 extern crate prettytable;
 use prettytable::Table;
+use prettytable::row::Row;
 use prettytable::format::FormatBuilder;
 use std::collections::HashMap;
 use std::iter::repeat;
@@ -12,10 +13,11 @@ use argparse::{ArgumentParser, StoreTrue, Store};
 
 fn main() {
     let opts = parse_args();
-    let (query, long, perf, verbose, tree) =
-        (opts.query, opts.long, opts.perf, opts.verbose, opts.tree);
+    let (query, long, perf, verbose, tree, threads) =
+        (opts.query, opts.long, opts.perf, opts.verbose, opts.tree, opts.threads);
 
-    let mut pids = PidIter::new_query(query).unwrap()
+    let pid_iter = PidIter::new_query(query);
+    let mut pids = pid_iter.unwrap()
         .collect::<Result<Vec<_>, _>>().unwrap();
 
     let mut name_indent = HashMap::new();
@@ -60,9 +62,18 @@ fn main() {
                 );
             }
 
+            let mut row = Vec::new();
+            match threads {
+                false => row.push(cell!(p.stat.pid)),
+                true => {
+                    row.push(cell!(p.status.tgid));
+                    row.push(cell!(p.status.pid));
+                }
+            };
+            row.push(cell!(p.stat.ppid));
             match (long, perf) {
                 (_, false) => {
-                    row![p.stat.pid, p.stat.ppid, name]
+                    row.push(cell!(name));
                 },
                 (_, true) => {
                     let rss = p.status.vmrss.map(|m| (m / 1024).to_string()).unwrap_or("".to_owned());
@@ -76,24 +87,29 @@ fn main() {
                         minute_utime,
                         second_utime
                     );
-                    row![p.stat.pid, p.stat.ppid, rss, cputime, name]
+                    row.push(cell!(rss));
+                    row.push(cell!(cputime));
                 }
             }
+            row.push(cell!(name));
+            Row::new(row)
         }).collect::<Vec<_>>()
     );
 
-    table.set_titles(
-        match (long, perf) {
-            (false, false) =>
-                row!["Pid", "Ppid", "Cmd"],
-            (true, false) =>
-                row!["Pid", "Ppid", "Cmd"],
-            (false, true) =>
-                row!["Pid", "Ppid", "RSS", "Time", "Cmd"],
-            (true, true) =>
-                row!["Pid", "Ppid", "RSS", "Time", "Cmd"]
-        }
-    );
+    let mut titles = Vec::new();
+    titles.push(cell!("Pid"));
+    if threads {
+        titles.push(cell!("Tid"));
+    }
+    // TODO: Possible remove Ppid from when long is false,
+    // and have Cmd/Args as separate columns for long.
+    match (long, perf) {
+        (_, false) =>
+            titles.extend_from_slice(&[cell!("Ppid"), cell!("Cmd")]),
+        (_, true) =>
+            titles.extend_from_slice(&[cell!("RSS"), cell!("Time"), cell!("Cmd")])
+    };
+    table.set_titles(Row::new(titles));
     table.set_format(
         FormatBuilder::new()
             .column_separator(' ')
@@ -143,6 +159,7 @@ fn enumerate_children(pid: TaskId, child_pids: &mut HashMap<TaskId, Vec<Pid>>,
 struct ProgOpts {
     query: PidQuery,
     tree: bool,
+    threads: bool,
     perf: bool,
     long: bool,
     verbose: bool
@@ -152,6 +169,7 @@ fn parse_args() -> ProgOpts {
     let mut opts = ProgOpts {
         query: PidQuery::NoneQuery,
         tree: false,
+        threads: false,
         perf: false,
         long: false,
         verbose: false
@@ -160,12 +178,14 @@ fn parse_args() -> ProgOpts {
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("Query linux processes");
+        ap.refer(&mut opts.threads)
+            .add_option(&["-t", "--threads"], StoreTrue, "Display individual threads");
         ap.refer(&mut opts.tree)
-            .add_option(&["-t", "--tree"], StoreTrue, "Display process tree");
+            .add_option(&["-T", "--tree"], StoreTrue, "Display commands in tree hierarchy");
         ap.refer(&mut opts.perf)
-            .add_option(&["-p", "--perf"], StoreTrue, "Display performance information");
+            .add_option(&["-p", "--perf"], StoreTrue, "Display columns about performance");
         ap.refer(&mut opts.long)
-            .add_option(&["-l", "--long"], StoreTrue, "Display more information");
+            .add_option(&["-l", "--long"], StoreTrue, "Display columns with more information");
         ap.refer(&mut opts.verbose)
             .add_option(&["-v", "--verbose"], StoreTrue, "Verbose output");
         ap.refer(&mut opts.query)
