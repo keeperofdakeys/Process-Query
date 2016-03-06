@@ -146,6 +146,7 @@ impl Ord for Pid {
 /// will not be yielded. An atomic view of processes on the system seems
 /// non-trivial.
 pub struct PidIter {
+    dir: String,
     dir_iter: ReadDir,
     query: PidQuery,
 }
@@ -159,7 +160,8 @@ impl PidIter {
     /// Create a new iterator over all processes in /proc, but only yield
     /// processes that match the given query.
     pub fn new_query(query: PidQuery) -> Result<Self, ProcError> {
-        let proc_dir = Path::new("/proc");
+        let dir_name = "/proc".to_owned();
+        let proc_dir = Path::new(&dir_name);
         let dir_iter = try!(
             fs::read_dir(proc_dir)
                 .map_err(|e|
@@ -167,6 +169,7 @@ impl PidIter {
                 )
         );
         Ok(PidIter {
+            dir: dir_name.clone(),
             dir_iter: dir_iter,
             query: query,
         })
@@ -183,6 +186,7 @@ impl PidIter {
                 )
         );
         Ok(PidIter {
+            dir: dir_name.clone(),
             dir_iter: dir_iter,
             query: query
         })
@@ -190,7 +194,7 @@ impl PidIter {
 
     /// Given a DirEntry, try to create a Pid struct, and only return if
     /// it matches the query, and is complete.
-    fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &PidQuery)
+    fn proc_dir_filter(entry_opt: Result<DirEntry, io::Error>, query: &PidQuery, dir_name: &str)
         -> Option<Result<Pid, ProcError>> {
         let file = entry_opt
             .map_err(|e|
@@ -211,7 +215,7 @@ impl PidIter {
                 // If an error is not hard (error opening or reading file),
                 // do not error as it may be a now-dead process.
                 // If a parsing error occurs, then do return an error.
-                let prc = match Pid::new(pid) {
+                let prc = match Pid::new_dir(Path::new(&dir_name), pid) {
                     Ok(prc) => prc,
                     Err(e) => {
                         if e.is_hard() {
@@ -221,7 +225,7 @@ impl PidIter {
                         }
                     }
                 };
-                match prc.query(query) {
+                match prc.query(&query) {
                     true => Some(Ok(prc)),
                     false => None
                 }
@@ -236,7 +240,7 @@ impl Iterator for PidIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         for entry in self.dir_iter.by_ref() {
-            match Self::proc_dir_filter(entry, &self.query) {
+            match Self::proc_dir_filter(entry, &self.query, &self.dir) {
                 some @ Some(_) => return some,
                 None => continue
             }
