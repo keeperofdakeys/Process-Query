@@ -9,6 +9,7 @@ use ::{TaskId, MemSize};
 
 #[derive(Debug, PartialEq)]
 pub struct PidStatus {
+    // TODO: Maybe these should all be optional, and be more annoying to call
     pub name: String,
     pub tgid: TaskId,
     pub pid: TaskId,
@@ -147,6 +148,8 @@ impl PidStatus {
 lazy_static! {
     // This vec should contain all columns that the parser is looking for,
     // at the moment this is definitely static.
+    //
+    // If this is not kept uptodate, the values will be ignored.
     static ref STATUS_COLS: HashSet<String> = vec!["Name", "Tgid", "Pid", "PPid",
         "TracerPid", "Uid", "Gid", "FDSize", "VmPeak", "VmSize", "VmLck",
         "VmPin", "VmHWM", "VmRSS", "VmData", "VmStk", "VmExe", "VmLib",
