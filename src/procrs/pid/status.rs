@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use ::error::{ProcError, ProcFile, ProcOper};
@@ -35,35 +35,62 @@ pub struct PidStatus {
     pub threads: u32
 }
 
-// Try removing key, if it's missing throw an error.
-// Then try parsing it, then returning a final value if no errors have occured.
+/// Extract a line, and error on missing value, or parsing failure.
 macro_rules! extract_line {
-    ($map:expr, $key:expr, $func:expr) =>
-        (try!(
-            $map.remove($key)
-                .ok_or(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
+    ($lines:expr, $key: expr, $func: expr) => {
+        // Default value for missing fields.
+        match extract_line_opt!($lines, $key, $func) {
+            Some(value) => value,
+            None => return Err(
+                ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
                     Some(concat!("missing ", $key)))
-                ).and_then(|s|
-                    $func(s).map_err(|e|
-                        ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
-                            Some(e), Some($key))
-                    )
-                )
-        ))
+            ),
+        }
+    }
 }
 
-// Similar to extract_line, except that a missing field isn't an error.
+/// Extract a line, evalute to an Option (None on missing field), error on parsing
+/// failure.
 macro_rules! extract_line_opt {
-    ($map:expr, $key:expr, $func:expr) =>
-        (match $map.remove($key) {
-            Some(s) => Some(try!(
-                $func(s).map_err(|e|
+    ($lines:expr, $key: expr, $func: expr) => { {
+        // Default value for missing fields>
+        let mut value = None;
+        for raw_line in $lines.by_ref() {
+            // Unwrap error
+            let line = try!(raw_line);
+            // Find colon offset, error on no match.
+            let colon_offset = match line.find(':') {
+                Some(i) => i,
+                None => return Err(
+                    ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon"))
+                ),
+            };
+            // Split into Key: Value based on colon offset.
+            let (first, second) = line.split_at(colon_offset);
+            let key = first.trim();
+            let (_, last) = second.split_at(1);
+            let line_val = last.trim();
+            // If we're not looking for this key, try the next one.
+            if !STATUS_COLS.contains(key) {
+                continue;
+            }
+            // If key doesn't match, break
+            if $key != key {
+                break;
+            }
+
+            // Call parsing function after trimming value.
+            value = Some(try!(
+                $func(line_val).map_err(|e|
                     ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
                         Some(e), Some($key))
                 )
-            )),
-            None => None
-        })
+            ));
+            // We have finished finding this value
+            break;
+        }
+        value
+    } }
 }
 
 impl PidStatus {
@@ -87,61 +114,56 @@ impl PidStatus {
         Self::parse_string(lines)
     }
 
-    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines: I) -> Result<Self, ProcError> {
-        let mut status: HashMap<_, _> = 
-            try!(
-                lines.map(|r|
-                    match r {
-                        Ok(line) => {
-                            let split = line.splitn(2, ':').collect::<Vec<&str>>();
-                            match (split.get(0), split.get(1)) {
-                                (Some(key), Some(value)) =>
-                                    Ok((key.trim().to_owned(),
-                                         value.trim().to_owned())),
-                                _ => Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStatus,
-                                             Some("Line missing colon")))
-                            }
-                        },
-                        Err(e) => Err(e)
-                    }
-                ).collect::<Result<_, _>>());
-
-
+    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(mut lines: I) -> Result<Self, ProcError> {
         // It's quite important that these appear in the order that they
         // appear in the status file
         Ok(PidStatus{
-            name: extract_line!(status, "Name", |s| Ok(s) as Result<String, ProcError>),
-            tgid: extract_line!(status, "Tgid", parse_any),
-            pid: extract_line!(status, "Pid", parse_any),
-            ppid: extract_line!(status, "PPid", parse_any),
-            tracerpid: extract_line!(status, "TracerPid", parse_any),
-            uid : extract_line!(status, "Uid", parse_uids),
-            gid : extract_line!(status, "Gid", parse_uids),
-            fdsize : extract_line!(status, "FDSize", parse_any),
-            vmpeak: extract_line_opt!(status, "VmPeak", parse_mem),
-            vmsize: extract_line_opt!(status, "VmSize", parse_mem),
-            vmlck: extract_line_opt!(status, "VmLck", parse_mem),
-            vmpin: extract_line_opt!(status, "VmPin", parse_mem),
-            vmhwm: extract_line_opt!(status, "VmHWM", parse_mem),
-            vmrss: extract_line_opt!(status, "VmRSS", parse_mem),
-            vmdata: extract_line_opt!(status, "VmData", parse_mem),
-            vmstk: extract_line_opt!(status, "VmStk", parse_mem),
-            vmexe: extract_line_opt!(status, "VmExe", parse_mem),
-            vmlib: extract_line_opt!(status, "VmLib", parse_mem),
-            vmpmd: extract_line_opt!(status, "VmPMD", parse_mem),
-            vmpte: extract_line_opt!(status, "VmPTE", parse_mem),
-            vmswap: extract_line_opt!(status, "VmSwap", parse_mem),
-            threads: extract_line!(status, "Threads", parse_any)
+            name: extract_line!(lines, "Name", |s| Ok((s as &str).to_owned()) as Result<String, ProcError>),
+            tgid: extract_line!(lines, "Tgid", parse_any),
+            pid: extract_line!(lines, "Pid", parse_any),
+            ppid: extract_line!(lines, "PPid", parse_any),
+            tracerpid: extract_line!(lines, "TracerPid", parse_any),
+            uid : extract_line!(lines, "Uid", parse_uids),
+            gid : extract_line!(lines, "Gid", parse_uids),
+            fdsize : extract_line!(lines, "FDSize", parse_any),
+            vmpeak: extract_line_opt!(lines, "VmPeak", parse_mem),
+            vmsize: extract_line_opt!(lines, "VmSize", parse_mem),
+            vmlck: extract_line_opt!(lines, "VmLck", parse_mem),
+            vmpin: extract_line_opt!(lines, "VmPin", parse_mem),
+            vmhwm: extract_line_opt!(lines, "VmHWM", parse_mem),
+            vmrss: extract_line_opt!(lines, "VmRSS", parse_mem),
+            vmdata: extract_line_opt!(lines, "VmData", parse_mem),
+            vmstk: extract_line_opt!(lines, "VmStk", parse_mem),
+            vmexe: extract_line_opt!(lines, "VmExe", parse_mem),
+            vmlib: extract_line_opt!(lines, "VmLib", parse_mem),
+            vmpte: extract_line_opt!(lines, "VmPTE", parse_mem),
+            vmpmd: extract_line_opt!(lines, "VmPMD", parse_mem),
+            vmswap: extract_line_opt!(lines, "VmSwap", parse_mem),
+            threads: extract_line!(lines, "Threads", parse_any)
         })
     }
 }
 
+lazy_static! {
+    // This vec should contain all columns that the parser is looking for,
+    // at the moment this is definitely static.
+    static ref STATUS_COLS: HashSet<String> = vec!["Name", "Tgid", "Pid", "PPid",
+        "TracerPid", "Uid", "Gid", "FDSize", "VmPeak", "VmSize", "VmLck",
+        "VmPin", "VmHWM", "VmRSS", "VmData", "VmStk", "VmExe", "VmLib",
+        "VmPMD", "VmPTE", "VmSwap", "Threads"]
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect();
+}
+
+
+
 // Parse anything that's parsable (type checker didn't like simple closures).
-fn parse_any<N: FromStr>(str: String) -> Result<N, N::Err> {
+fn parse_any<N: FromStr>(str: &str) -> Result<N, N::Err> {
     str.parse()
 }
 
-fn parse_uids(uid_str: String) -> Result<(u32, u32, u32, u32), ProcError> {
+fn parse_uids(uid_str: &str) -> Result<(u32, u32, u32, u32), ProcError> {
     let uids = try!(
         uid_str.split("\t")
             .filter(|s| s != &"")
@@ -161,7 +183,7 @@ fn parse_uids(uid_str: String) -> Result<(u32, u32, u32, u32), ProcError> {
     Ok((uids[0], uids[1], uids[2], uids[3]))
 }
 
-fn parse_mem(mem_str: String) -> Result<MemSize, ParseIntError> {
+fn parse_mem(mem_str: &str) -> Result<MemSize, ParseIntError> {
     mem_str.trim_right_matches(" kB")
         .parse::<MemSize>()
         .map(|n| n * 1024)
@@ -172,7 +194,7 @@ fn test_no_colon() {
     let lines = "Name".lines().map(|l| Ok(l.to_owned()));
     let status = PidStatus::parse_string(lines);
     assert_eq!(status,
-        Err(ProcError::new_more(ProcOper::Parsing, ProcFile::PidStatus, Some("Line missing colon")))
+        Err(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon")))
     );
 }
 

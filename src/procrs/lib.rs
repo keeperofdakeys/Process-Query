@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 /// Get information about a process (/proc/[pid]/)
 pub mod pid;
 /// The error type used for this crate
