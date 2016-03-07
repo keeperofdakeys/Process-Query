@@ -46,23 +46,30 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1148' class='srclink' href='../../src/procrs/pid/mod.rs.html#28-35' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1461' class='srclink' href='../../src/procrs/pid/mod.rs.html#25-39' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Pid {
+    pub pid: <a class='type' href='../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
     pub stat: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;PidStat&gt;,
     pub status: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;PidStatus&gt;,
     pub cmdline: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;,
+    // some fields omitted
 }</pre><div class='docblock'><p>A struct containing information about a process.</p>
 
 <p>This struct contains information from various files inside the
 /proc/[pid] directory (for the respective pid).</p>
 </div><h2 class='fields'>Fields</h2>
 <table><tr class='stab '>
+                                  <td id='structfield.pid'><code>pid</code></td><td><div class='docblock'><p>The tid of this process</p>
+</div></td></tr><tr class='stab '>
                                   <td id='structfield.stat'><code>stat</code></td><td><div class='docblock'><p>The /proc/[pid]/stat file</p>
 </div></td></tr><tr class='stab '>
                                   <td id='structfield.status'><code>status</code></td><td><div class='docblock'><p>The /proc/[pid]/status file</p>
 </div></td></tr><tr class='stab '>
                                   <td id='structfield.cmdline'><code>cmdline</code></td><td><div class='docblock'><p>The /proc/[pid]/cmdline file</p>
 </div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(pid: <a class='type' href='../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='struct' href='../../procrs/error/struct.ProcError.html' title='procrs::error::ProcError'>ProcError</a>&gt;</code></h4>
+<div class='docblock'><p>Create a new Pid struct for a process, given a pid.</p>
+</div><h4 id='method.tasks' class='method'><code>fn <a href='#method.tasks' class='fnname'>tasks</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a>&gt;&gt;</code></h4>
+<h4 id='method.tasks_query' class='method'><code>fn <a href='#method.tasks_query' class='fnname'>tasks_query</a>(&amp;self, query: <a class='enum' href='../../procrs/pid/enum.PidQuery.html' title='procrs::pid::PidQuery'>PidQuery</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a>&gt;&gt;</code></h4>
 </div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a></code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, other: &amp;Self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, other: &amp;Rhs) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 </div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html' title='core::cmp::Eq'>Eq</a> for <a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a></code></h3><div class='impl-items'></div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html' title='core::cmp::PartialOrd'>PartialOrd</a> for <a class='struct' href='../../procrs/pid/struct.Pid.html' title='procrs::pid::Pid'>Pid</a></code></h3><div class='impl-items'><h4 id='method.partial_cmp' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.partial_cmp' class='fnname'>partial_cmp</a>(&amp;self, other: &amp;Self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='enum' href='https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html' title='core::cmp::Ordering'>Ordering</a>&gt;</code></h4>

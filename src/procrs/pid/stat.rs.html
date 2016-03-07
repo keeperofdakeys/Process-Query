@@ -608,9 +608,9 @@
 
 <span class='kw'>impl</span> <span class='ident'>PidStat</span> {
     <span class='doccomment'>/// Generate PidStat struct given a process directory.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>pid_dir</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>ProcError</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>pid_dir</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>ProcError</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>file</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(
-            <span class='ident'>File</span>::<span class='ident'>open</span>(<span class='ident'>Path</span>::<span class='ident'>new</span>(<span class='ident'>pid_dir</span>).<span class='ident'>join</span>(<span class='string'>&quot;stat&quot;</span>))
+            <span class='ident'>File</span>::<span class='ident'>open</span>(<span class='ident'>pid_dir</span>.<span class='ident'>join</span>(<span class='string'>&quot;stat&quot;</span>))
                 .<span class='ident'>map_err</span>(<span class='op'>|</span><span class='ident'>e</span><span class='op'>|</span>
                     <span class='ident'>ProcError</span>::<span class='ident'>new_err</span>(<span class='ident'>ProcOper</span>::<span class='ident'>Opening</span>, <span class='ident'>ProcFile</span>::<span class='ident'>PidStat</span>, <span class='ident'>e</span>)
                 )
