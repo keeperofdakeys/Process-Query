@@ -1,1 +1,1 @@
-initSidebarItems({});
+initSidebarItems({"struct":[["PidStatus","A struct containing information from the status file for a process."]]});

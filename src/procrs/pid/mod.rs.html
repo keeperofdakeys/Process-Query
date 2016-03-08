@@ -434,9 +434,9 @@
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>str</span>::<span class='ident'>FromStr</span>;
 
 <span class='doccomment'>/// Get process stats (/proc/[pid]/stat)</span>
-<span class='kw'>mod</span> <span class='ident'>stat</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>stat</span>;
 <span class='doccomment'>/// Get process status (/proc/[pid]/status)</span>
-<span class='kw'>mod</span> <span class='ident'>status</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>status</span>;
 
 <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>stat</span>::<span class='ident'>PidStat</span>;
 <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>status</span>::<span class='ident'>PidStatus</span>;

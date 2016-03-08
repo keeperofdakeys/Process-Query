@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `PidStatus` struct in crate `procrs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, PidStatus">
+
+    <title>procrs::pid::status::PidStatus - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>procrs</a>::<wbr><a href='../index.html'>pid</a>::<wbr><a href='index.html'>status</a></p><script>window.sidebarCurrent = {name: 'PidStatus', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>procrs</a>::<wbr><a href='../index.html'>pid</a>::<wbr><a href='index.html'>status</a>::<wbr><a class='struct' href=''>PidStatus</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-820' class='srclink' href='../../../src/procrs/pid/status.rs.html#15-41' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct PidStatus {
+    pub name: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,
+    pub tgid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub pid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub ppid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub tracerpid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub uid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</a>,
+    pub gid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</a>,
+    pub fdsize: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>,
+    pub vmpeak: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmsize: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmlck: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmpin: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmhwm: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmrss: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmdata: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmstk: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmexe: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmlib: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmpte: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmpmd: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub vmswap: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
+    pub threads: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>,
+}</pre><div class='docblock'><p>A struct containing information from the status file for a process.</p>
+
+<p>This struct contains information from the /proc/[pid]/status or
+/proc/[tgid]/task/[tid]/status file, for a specific pid or tgid/tid.</p>
+</div><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                                  <td id='structfield.name'><code>name</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.tgid'><code>tgid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.pid'><code>pid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.ppid'><code>ppid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.tracerpid'><code>tracerpid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.uid'><code>uid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.gid'><code>gid</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.fdsize'><code>fdsize</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpeak'><code>vmpeak</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmsize'><code>vmsize</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmlck'><code>vmlck</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpin'><code>vmpin</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmhwm'><code>vmhwm</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmrss'><code>vmrss</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmdata'><code>vmdata</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmstk'><code>vmstk</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmexe'><code>vmexe</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmlib'><code>vmlib</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpte'><code>vmpte</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpmd'><code>vmpmd</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.vmswap'><code>vmswap</code></td><td></td></tr><tr class='stab '>
+                                  <td id='structfield.threads'><code>threads</code></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(pid_dir: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/std/path/struct.Path.html' title='std::path::Path'>Path</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='struct' href='../../../procrs/error/struct.ProcError.html' title='procrs::error::ProcError'>ProcError</a>&gt;</code></h4>
+<div class='docblock'><p>Generate PidStatus struct given a process directory</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "procrs";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

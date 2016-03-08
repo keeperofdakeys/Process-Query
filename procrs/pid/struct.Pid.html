@@ -49,8 +49,8 @@
         </span><a id='src-1461' class='srclink' href='../../src/procrs/pid/mod.rs.html#25-39' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Pid {
     pub pid: <a class='type' href='../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
-    pub stat: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;PidStat&gt;,
-    pub status: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;PidStatus&gt;,
+    pub stat: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;<a class='struct' href='../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a>&gt;,
+    pub status: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;<a class='struct' href='../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a>&gt;,
     pub cmdline: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;,
     // some fields omitted
 }</pre><div class='docblock'><p>A struct containing information about a process.</p>

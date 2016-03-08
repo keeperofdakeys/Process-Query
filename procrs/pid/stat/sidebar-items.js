@@ -1,1 +1,1 @@
-initSidebarItems({});
+initSidebarItems({"enum":[["PidState","A list of states that a process can be in."]],"struct":[["PidStat","A struct containing information from the stat file for a process."]]});

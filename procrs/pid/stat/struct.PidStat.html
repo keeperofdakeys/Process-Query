@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `PidStat` struct in crate `procrs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, PidStat">
+
+    <title>procrs::pid::stat::PidStat - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>procrs</a>::<wbr><a href='../index.html'>pid</a>::<wbr><a href='index.html'>stat</a></p><script>window.sidebarCurrent = {name: 'PidStat', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>procrs</a>::<wbr><a href='../index.html'>pid</a>::<wbr><a href='index.html'>stat</a>::<wbr><a class='struct' href=''>PidStat</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-22' class='srclink' href='../../../src/procrs/pid/stat.rs.html#13-119' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct PidStat {
+    pub pid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub comm: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,
+    pub state: <a class='enum' href='../../../procrs/pid/stat/enum.PidState.html' title='procrs::pid::stat::PidState'>PidState</a>,
+    pub ppid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
+    pub pgrp: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,
+    pub session: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,
+    pub tty_nr: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,
+    pub tpgid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,
+    pub flags: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>,
+    pub minflt: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub cminflt: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub majflt: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub cmajflt: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub utime: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub stime: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub cutime: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub cstime: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub priority: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub nice: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub num_threads: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub itrealvalue: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub starttime: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub vsize: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub rss: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>,
+    pub rsslim: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub startcode: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub endcode: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub startstack: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub kstkesp: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub kstkeip: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub signal: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub blocked: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub sigignore: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub sigcatch: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub wchan: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub nswap: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub cnswap: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub exit_signal: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>&gt;,
+    pub processor: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>&gt;,
+    pub rt_priority: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>&gt;,
+    pub policy: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>&gt;,
+    pub delayacct_blkio_ticks: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub guest_time: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub cguest_time: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>&gt;,
+    pub start_data: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub end_data: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub start_brk: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub arg_start: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub arg_end: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub env_start: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub env_end: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
+    pub exit_code: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>&gt;,
+}</pre><div class='docblock'><p>A struct containing information from the stat file for a process.</p>
+
+<p>This struct contains information from the /proc/[pid]/stat or
+/proc/[tgid]/task/[tid]/stat file, for a specific pid or tgid/tid.
+for a specific pid.</p>
+</div><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                                  <td id='structfield.pid'><code>pid</code></td><td><div class='docblock'><p>The process id.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.comm'><code>comm</code></td><td><div class='docblock'><p>The filename of the executable.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.state'><code>state</code></td><td><div class='docblock'><p>The process state.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.ppid'><code>ppid</code></td><td><div class='docblock'><p>The process id of the parent process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.pgrp'><code>pgrp</code></td><td><div class='docblock'><p>The process group id.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.session'><code>session</code></td><td><div class='docblock'><p>The session id of this process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.tty_nr'><code>tty_nr</code></td><td><div class='docblock'><p>The controlling tty of this process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.tpgid'><code>tpgid</code></td><td><div class='docblock'><p>The id of the process controlling the tty of this process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.flags'><code>flags</code></td><td><div class='docblock'><p>The kernel flags of this processj.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.minflt'><code>minflt</code></td><td><div class='docblock'><p>Count of minor page faults not requiring disk access.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cminflt'><code>cminflt</code></td><td><div class='docblock'><p>Count of minor page faults in children we are waiting for.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.majflt'><code>majflt</code></td><td><div class='docblock'><p>Count of major page faults not requiring disk acceess.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cmajflt'><code>cmajflt</code></td><td><div class='docblock'><p>Count of major page faults in children we are waiting for.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.utime'><code>utime</code></td><td><div class='docblock'><p>Amout of time this process has been scheduled in user mode.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.stime'><code>stime</code></td><td><div class='docblock'><p>Amount of time this process has been scheduled in kernel mode.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cutime'><code>cutime</code></td><td><div class='docblock'><p>Amount of time children we are waiting for have been scheduled in user mode.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cstime'><code>cstime</code></td><td><div class='docblock'><p>Amount of time children we are waiting for have been scheduled in kernel mode.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.priority'><code>priority</code></td><td><div class='docblock'><p>Priority of process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.nice'><code>nice</code></td><td><div class='docblock'><p>Process nice value (19 low -&gt; -20 high).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.num_threads'><code>num_threads</code></td><td><div class='docblock'><p>Number of threads this process is using.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.itrealvalue'><code>itrealvalue</code></td><td><div class='docblock'><p>Count of jiffies before we receive the next SIGALRM (0 since kernel 2.6.17).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.starttime'><code>starttime</code></td><td><div class='docblock'><p>The time the process started after boot (ticks since kernel 2.6).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vsize'><code>vsize</code></td><td><div class='docblock'><p>Virtual memory size in bytes.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.rss'><code>rss</code></td><td><div class='docblock'><p>Resident set size in pages.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.rsslim'><code>rsslim</code></td><td><div class='docblock'><p>RSS soft limit of process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.startcode'><code>startcode</code></td><td><div class='docblock'><p>Memory address where executable memory starts.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.endcode'><code>endcode</code></td><td><div class='docblock'><p>Memory address where executable memory stops.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.startstack'><code>startstack</code></td><td><div class='docblock'><p>The start address of the stack (ie: bottom).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.kstkesp'><code>kstkesp</code></td><td><div class='docblock'><p>The current value of ESP (stack pointer).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.kstkeip'><code>kstkeip</code></td><td><div class='docblock'><p>The current EIP (instruction pointer).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.signal'><code>signal</code></td><td><div class='docblock'><p>The bitmap of pending signals, displayed as a decimal number.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.blocked'><code>blocked</code></td><td><div class='docblock'><p>The bitmap of blocked signals, displayed as a decimal number.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.sigignore'><code>sigignore</code></td><td><div class='docblock'><p>The bitmap of ignored signals, displayed as a decimal number.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.sigcatch'><code>sigcatch</code></td><td><div class='docblock'><p>The bitmap of caught signals, displayed as a decimal number.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.wchan'><code>wchan</code></td><td><div class='docblock'><p>This is the &quot;channel&quot; in which the process is waiting.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.nswap'><code>nswap</code></td><td><div class='docblock'><p>Number of pages swapped (not maintained).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cnswap'><code>cnswap</code></td><td><div class='docblock'><p>Cumulative nswap for child processes (not maintained).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.exit_signal'><code>exit_signal</code></td><td><div class='docblock'><p>Signal sent to the parent when we die.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.processor'><code>processor</code></td><td><div class='docblock'><p>CPU number last executed on.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.rt_priority'><code>rt_priority</code></td><td><div class='docblock'><p>Real-time scheduling priority.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.policy'><code>policy</code></td><td><div class='docblock'><p>Scheduling policy.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.delayacct_blkio_ticks'><code>delayacct_blkio_ticks</code></td><td><div class='docblock'><p>Aggregated block I/O delays, measured in clock ticks.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.guest_time'><code>guest_time</code></td><td><div class='docblock'><p>Time spent running a virtual CPU for a guest OS, in clock ticks.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.cguest_time'><code>cguest_time</code></td><td><div class='docblock'><p>Guest time of the process&#39;s children, in clock ticks.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.start_data'><code>start_data</code></td><td><div class='docblock'><p>Address above which init&#39;d and uninit&#39;d (BSS) data is placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.end_data'><code>end_data</code></td><td><div class='docblock'><p>Address below which init&#39;d and uninit&#39;d (BSS) data is placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.start_brk'><code>start_brk</code></td><td><div class='docblock'><p>Address above which program heap can be expanded.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.arg_start'><code>arg_start</code></td><td><div class='docblock'><p>Address above which program cmdline args (arv) are placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.arg_end'><code>arg_end</code></td><td><div class='docblock'><p>Address below  which program cmdline args (arv) are placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.env_start'><code>env_start</code></td><td><div class='docblock'><p>Address above which program environment is placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.env_end'><code>env_end</code></td><td><div class='docblock'><p>Address below which program environment is placed.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.exit_code'><code>exit_code</code></td><td><div class='docblock'><p>The thread&#39;s exit status.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(pid_dir: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/std/path/struct.Path.html' title='std::path::Path'>Path</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='struct' href='../../../procrs/error/struct.ProcError.html' title='procrs::error::ProcError'>ProcError</a>&gt;</code></h4>
+<div class='docblock'><p>Generate PidStat struct given a process directory.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a></code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a></code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a></code></h4>
+<h4 id='method.clone_from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../../procrs/pid/stat/struct.PidStat.html' title='procrs::pid::stat::PidStat'>PidStat</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "procrs";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>
