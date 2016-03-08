@@ -463,6 +463,7 @@
 <span id="420">420</span>
 <span id="421">421</span>
 <span id="422">422</span>
+<span id="423">423</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fs</span>::<span class='ident'>File</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>path</span>::<span class='ident'>Path</span>;
@@ -472,7 +473,8 @@
 
 <span class='doccomment'>/// A struct containing information from the stat file for a process.</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>/// This struct contains information from the /proc/[pid]/stat file</span>
+<span class='doccomment'>/// This struct contains information from the /proc/[pid]/stat or</span>
+<span class='doccomment'>/// /proc/[tgid]/task/[tid]/stat file, for a specific pid or tgid/tid.</span>
 <span class='doccomment'>/// for a specific pid.</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>, <span class='ident'>Clone</span>, <span class='ident'>PartialEq</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>PidStat</span> {
