@@ -8,9 +8,9 @@ use std::cmp::Ordering;
 use std::str::FromStr;
 
 /// Get process stats (/proc/[pid]/stat)
-mod stat;
+pub mod stat;
 /// Get process status (/proc/[pid]/status)
-mod status;
+pub mod status;
 
 use self::stat::PidStat;
 use self::status::PidStatus;
