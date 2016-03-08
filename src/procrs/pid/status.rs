@@ -8,6 +8,10 @@ use ::error::{ProcError, ProcFile, ProcOper};
 use ::{TaskId, MemSize};
 
 #[derive(Debug, PartialEq)]
+/// A struct containing information from the status file for a process.
+///
+/// This struct contains information from the /proc/[pid]/status or
+/// /proc/[tgid]/task/[tid]/status file, for a specific pid or tgid/tid.
 pub struct PidStatus {
     // TODO: Maybe these should all be optional, and be more annoying to call
     pub name: String,
@@ -95,7 +99,7 @@ macro_rules! extract_line_opt {
 }
 
 impl PidStatus {
-    // Generate PidStatus struct given a process directory
+    /// Generate PidStatus struct given a process directory
     pub fn new(pid_dir: &Path) -> Result<Self, ProcError> {
         // Try opening file
         let status_file = try!(
@@ -115,6 +119,7 @@ impl PidStatus {
         Self::parse_string(lines)
     }
 
+    /// Parse an Iterator of lines as a /proc/[pid]/status file.
     fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(mut lines: I) -> Result<Self, ProcError> {
         // It's quite important that these appear in the order that they
         // appear in the status file
@@ -161,11 +166,12 @@ lazy_static! {
 
 
 
-// Parse anything that's parsable (type checker didn't like simple closures).
+/// Parse anything that's parsable from a string.
 fn parse_any<N: FromStr>(str: &str) -> Result<N, N::Err> {
     str.parse()
 }
 
+/// Parse a set of four numbers as uids or gids.
 fn parse_uids(uid_str: &str) -> Result<(u32, u32, u32, u32), ProcError> {
     let uids = try!(
         uid_str.split("\t")
@@ -186,6 +192,7 @@ fn parse_uids(uid_str: &str) -> Result<(u32, u32, u32, u32), ProcError> {
     Ok((uids[0], uids[1], uids[2], uids[3]))
 }
 
+/// Parse a string as a kB memory string.
 fn parse_mem(mem_str: &str) -> Result<MemSize, ParseIntError> {
     mem_str.trim_right_matches(" kB")
         .parse::<MemSize>()

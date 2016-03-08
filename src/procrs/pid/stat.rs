@@ -6,7 +6,8 @@ use TaskId;
 
 /// A struct containing information from the stat file for a process.
 ///
-/// This struct contains information from the /proc/[pid]/stat file
+/// This struct contains information from the /proc/[pid]/stat or
+/// /proc/[tgid]/task/[tid]/stat file, for a specific pid or tgid/tid.
 /// for a specific pid.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PidStat {
