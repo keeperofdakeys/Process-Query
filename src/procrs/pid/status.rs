@@ -44,7 +44,7 @@ pub struct PidStatus {
 macro_rules! extract_line {
     ($lines:expr, $key: expr, $func: expr) => {
         // Default value for missing fields.
-        match extract_line_opt!($lines, $key, $func) {
+        match extract_line_opt!( $lines, $key, $func) {
             Some(value) => value,
             None => return Err(
                 ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
@@ -57,41 +57,58 @@ macro_rules! extract_line {
 /// Extract a line, evalute to an Option (None on missing field), error on parsing
 /// failure.
 macro_rules! extract_line_opt {
-    ($lines:expr, $key: expr, $func: expr) => { {
+    ($lines: expr, $key: expr, $func: expr) => { {
         // Default value for missing fields>
         let mut value = None;
-        for raw_line in $lines.by_ref() {
-            // Unwrap error
-            let line = try!(raw_line);
-            // Find colon offset, error on no match.
-            let colon_offset = match line.find(':') {
-                Some(i) => i,
-                None => return Err(
-                    ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon"))
-                ),
-            };
-            // Split into Key: Value based on colon offset.
-            let (first, second) = line.split_at(colon_offset);
-            let key = first.trim();
-            let (_, last) = second.split_at(1);
-            let line_val = last.trim();
-            // If we're not looking for this key, try the next one.
-            if !STATUS_COLS.contains(key) {
-                continue;
-            }
-            // If key doesn't match, break
-            if $key != key {
-                break;
-            }
+        let mut next_val = false;
+        loop {
+            {
+                if next_val {
+                    let _ = $lines.by_ref().next();
+                }
+                // Break if iterator is finished
+                if $lines.by_ref().peek().is_none() {
+                    break;
+                }
+                // Return error if value is Err
+                if $lines.by_ref().peek().as_ref().unwrap().is_err() {
+                    let _ = try!($lines.by_ref().next().unwrap());
+                }
+                // Finally peek value to decode
+                let line = $lines.by_ref().peek().as_ref().unwrap().as_ref().unwrap();
+                // Find colon offset, error on no match.
+                let colon_offset = match line.find(':') {
+                    Some(i) => i,
+                    None => return Err(
+                        ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon"))
+                    ),
+                };
+                // Split into Key: Value based on colon offset.
+                let (first, second) = line.split_at(colon_offset);
+                let key = first.trim();
+                let (_, last) = second.split_at(1);
+                let line_val = last.trim();
+                // If we're not looking for this key, try the next one.
+                if !STATUS_COLS.contains(key) {
+                    next_val = true;
+                    continue;
+                }
+                // If key doesn't match, break
+                if $key != key {
+                    break;
+                }
 
-            // Call parsing function after trimming value.
-            value = Some(try!(
-                $func(line_val).map_err(|e|
-                    ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
-                        Some(e), Some($key))
-                )
-            ));
-            // We have finished finding this value
+                // Call parsing function after trimming value.
+                // (Funcs must assume they will only get a borrowed string)
+                value = Some(try!(
+                    $func(line_val).map_err(|e|
+                        ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+                            Some(e), Some($key))
+                    )
+                ));
+            }
+            let _ = $lines.by_ref().next();
+            // We have finished finding this value, get next one.
             break;
         }
         value
@@ -120,7 +137,8 @@ impl PidStatus {
     }
 
     /// Parse an Iterator of lines as a /proc/[pid]/status file.
-    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(mut lines: I) -> Result<Self, ProcError> {
+    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines_iter: I) -> Result<Self, ProcError> {
+        let mut lines = lines_iter.peekable();
         // It's quite important that these appear in the order that they
         // appear in the status file
         Ok(PidStatus{
@@ -174,7 +192,7 @@ fn parse_any<N: FromStr>(str: &str) -> Result<N, N::Err> {
 /// Parse a set of four numbers as uids or gids.
 fn parse_uids(uid_str: &str) -> Result<(u32, u32, u32, u32), ProcError> {
     let uids = try!(
-        uid_str.split("\t")
+        uid_str.split_whitespace()
             .filter(|s| s != &"")
             .map(|s|
                 s.parse()
@@ -296,10 +314,7 @@ fn test_optional_parse() {
                  NSsid: 0\n\
                  Threads:   1\n\
                  ".lines().map(|l| Ok(l.to_owned()));
-    let status = PidStatus::parse_string(lines);
-    assert_eq!(status,
-        Err(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("missing Threads")))
-    );
+    let _ = PidStatus::parse_string(lines).unwrap();
 }
 
 #[test]
