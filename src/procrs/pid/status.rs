@@ -278,6 +278,31 @@ fn test_mem_parse() {
 }
 
 #[test]
+fn test_optional_parse() {
+    let lines = "Name:  kthreadd\n\
+                 State: S (sleeping)\n\
+                 Tgid:  2\n\
+                 Ngid:  0\n\
+                 Pid:   2\n\
+                 PPid:  0\n\
+                 TracerPid: 0\n\
+                 Uid:   0   0   0   0\n\
+                 Gid:   0   0   0   0\n\
+                 FDSize:    64\n\
+                 Groups:    \n\
+                 NStgid:    2\n\
+                 NSpid: 2\n\
+                 NSpgid:    0\n\
+                 NSsid: 0\n\
+                 Threads:   1\n\
+                 ".lines().map(|l| Ok(l.to_owned()));
+    let status = PidStatus::parse_string(lines);
+    assert_eq!(status,
+        Err(ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("missing Threads")))
+    );
+}
+
+#[test]
 fn test_parsing() {
     let lines = "Name:	bash\n\
                  Tgid:	27899\n\
