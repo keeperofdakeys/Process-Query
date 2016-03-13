@@ -34,29 +34,51 @@ macro_rules! unwrap {
 /// /proc/[tgid]/task/[tid]/status file, for a specific pid or tgid/tid.
 pub struct PidStatus {
     // TODO: Maybe these should all be optional, and be more annoying to call
+    /// Command run by this process.
     pub name: String,
+    /// Thread group ID (ie: Process ID).
     pub tgid: TaskId,
+    /// Thread ID.
     pub pid: TaskId,
+    /// PID of parent process.
     pub ppid: TaskId,
+    /// PID of process tracing this process (0 if not being traced).
     pub tracerpid: TaskId,
-    // uid: Real, Effective, Saved, Filesystem
+    /// Real, effective, saved set, file system UIDs.
     pub uid: (u32, u32, u32, u32),
-    // gid: Real, Effective, Saved, Filesystem
+    /// Real, effective, saved set, file system GIDs.
     pub gid: (u32, u32, u32, u32),
+    /// Number of file descriptor slots currently allocated.
     pub fdsize: u32,
+    /// Peak virtual memory size.
     pub vmpeak: Option<MemSize>,
+    /// Virtual memory size.
     pub vmsize: Option<MemSize>,
+    /// Locked memory size.
     pub vmlck: Option<MemSize>,
+    /// Pinned memory size. These are pages that can't be moved because something needs
+    /// to directly access physical memory.
     pub vmpin: Option<MemSize>,
+    /// Peak resident set size ("high water mark").
     pub vmhwm: Option<MemSize>,
+    /// Resident set size.
     pub vmrss: Option<MemSize>,
+    /// Size of data segment.
     pub vmdata: Option<MemSize>,
+    /// Size of stack segment
     pub vmstk: Option<MemSize>,
+    /// Size of text segment.
     pub vmexe: Option<MemSize>,
+    /// Shared library code size.
     pub vmlib: Option<MemSize>,
+    /// Page table entries size.
     pub vmpte: Option<MemSize>,
+    /// Size of second-level page tables.
     pub vmpmd: Option<MemSize>,
+    /// Swapped-out virtual memory size by anonymous private pages; shmem swap usage
+    /// is not included.
     pub vmswap: Option<MemSize>,
+    /// Number of threads in process containing this thread.
     pub threads: u32
 }
 
