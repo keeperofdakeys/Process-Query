@@ -46,15 +46,15 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-817' class='srclink' href='../../../src/procrs/pid/status.rs.html#35-61' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-817' class='srclink' href='../../../src/procrs/src/procrs/pid/status.rs.html#35-83' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct PidStatus {
     pub name: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,
     pub tgid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
     pub pid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
     pub ppid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
     pub tracerpid: <a class='type' href='../../../procrs/type.TaskId.html' title='procrs::TaskId'>TaskId</a>,
-    pub uid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</a>,
-    pub gid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</a>,
+    pub uid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a>,
+    pub gid: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a>,
     pub fdsize: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>,
     pub vmpeak: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
     pub vmsize: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../../procrs/type.MemSize.html' title='procrs::MemSize'>MemSize</a>&gt;,
@@ -76,28 +76,52 @@
 /proc/[tgid]/task/[tid]/status file, for a specific pid or tgid/tid.</p>
 </div><h2 class='fields'>Fields</h2>
 <table><tr class='stab '>
-                                  <td id='structfield.name'><code>name</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.tgid'><code>tgid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.pid'><code>pid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.ppid'><code>ppid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.tracerpid'><code>tracerpid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.uid'><code>uid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.gid'><code>gid</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.fdsize'><code>fdsize</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmpeak'><code>vmpeak</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmsize'><code>vmsize</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmlck'><code>vmlck</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmpin'><code>vmpin</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmhwm'><code>vmhwm</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmrss'><code>vmrss</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmdata'><code>vmdata</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmstk'><code>vmstk</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmexe'><code>vmexe</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmlib'><code>vmlib</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmpte'><code>vmpte</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmpmd'><code>vmpmd</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.vmswap'><code>vmswap</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.threads'><code>threads</code></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(pid_dir: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/std/path/struct.Path.html' title='std::path::Path'>Path</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='struct' href='../../../procrs/error/struct.ProcError.html' title='procrs::error::ProcError'>ProcError</a>&gt;</code></h4>
+                                  <td id='structfield.name'><code>name</code></td><td><div class='docblock'><p>Command run by this process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.tgid'><code>tgid</code></td><td><div class='docblock'><p>Thread group ID (ie: Process ID).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.pid'><code>pid</code></td><td><div class='docblock'><p>Thread ID.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.ppid'><code>ppid</code></td><td><div class='docblock'><p>PID of parent process.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.tracerpid'><code>tracerpid</code></td><td><div class='docblock'><p>PID of process tracing this process (0 if not being traced).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.uid'><code>uid</code></td><td><div class='docblock'><p>Real, effective, saved set, file system UIDs.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.gid'><code>gid</code></td><td><div class='docblock'><p>Real, effective, saved set, file system GIDs.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.fdsize'><code>fdsize</code></td><td><div class='docblock'><p>Number of file descriptor slots currently allocated.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpeak'><code>vmpeak</code></td><td><div class='docblock'><p>Peak virtual memory size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmsize'><code>vmsize</code></td><td><div class='docblock'><p>Virtual memory size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmlck'><code>vmlck</code></td><td><div class='docblock'><p>Locked memory size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpin'><code>vmpin</code></td><td><div class='docblock'><p>Pinned memory size. These are pages that can&#39;t be moved because something needs
+to directly access physical memory.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmhwm'><code>vmhwm</code></td><td><div class='docblock'><p>Peak resident set size (&quot;high water mark&quot;).</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmrss'><code>vmrss</code></td><td><div class='docblock'><p>Resident set size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmdata'><code>vmdata</code></td><td><div class='docblock'><p>Size of data segment.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmstk'><code>vmstk</code></td><td><div class='docblock'><p>Size of stack segment</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmexe'><code>vmexe</code></td><td><div class='docblock'><p>Size of text segment.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmlib'><code>vmlib</code></td><td><div class='docblock'><p>Shared library code size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpte'><code>vmpte</code></td><td><div class='docblock'><p>Page table entries size.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmpmd'><code>vmpmd</code></td><td><div class='docblock'><p>Size of second-level page tables.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.vmswap'><code>vmswap</code></td><td><div class='docblock'><p>Swapped-out virtual memory size by anonymous private pages; shmem swap usage
+is not included.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.threads'><code>threads</code></td><td><div class='docblock'><p>Number of threads in process containing this thread.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(pid_dir: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/std/path/struct.Path.html' title='std::path::Path'>Path</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='struct' href='../../../procrs/error/struct.ProcError.html' title='procrs::error::ProcError'>ProcError</a>&gt;</code></h4>
 <div class='docblock'><p>Generate PidStatus struct given a process directory</p>
 </div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a></code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../../procrs/pid/status/struct.PidStatus.html' title='procrs::pid::status::PidStatus'>PidStatus</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
@@ -145,7 +169,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>
