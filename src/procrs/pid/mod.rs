@@ -23,6 +23,7 @@ use TaskId;
 /// /proc/[pid] directory (for the respective pid).
 #[derive(Debug)]
 pub struct Pid {
+    // FIXME: Take Vec<PidFile> to indicate which things to parse
     /// The tid of this process
     pub pid: TaskId,
     /// The /proc/[pid]/stat file
@@ -138,6 +139,13 @@ impl Ord for Pid {
     fn cmp(&self, other: &Self) -> Ordering {
         self.stat.pid.cmp(&other.stat.pid)
     }
+}
+
+/// A list of files in the pid directory.
+enum PIdFiles {
+    PidStatus,
+    PidStat,
+    PidCmdline
 }
 
 /// An Iterator over processes in the system.
