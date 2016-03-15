@@ -12,6 +12,8 @@ use procrs::pid::*;
 use procrs::TaskId;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
+mod columns;
+
 fn main() {
     let opts = parse_args();
     let (query, long, perf, verbose, tree, threads) =
