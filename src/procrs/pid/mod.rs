@@ -142,7 +142,7 @@ impl Ord for Pid {
 }
 
 /// A list of files in the pid directory.
-enum PIdFiles {
+pub enum PidFile {
     PidStatus,
     PidStat,
     PidCmdline
