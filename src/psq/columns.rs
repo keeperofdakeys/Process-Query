@@ -1,25 +1,33 @@
 use std::str::FromStr;
+use std::iter::IntoIterator;
+use std::collections::HashSet;
 use procrs::pid::PidFile;
 
 // FIXME: This may be better in procps
 enum PidCols {
     Pid,
-    Ppid
+    Tid,
+    Tgid,
+    Ppid,
+    RSS,
+    Time,
+    Cmd,
+    CmdLine
 }
 
 impl PidCols {
     fn get_file(&self) -> PidFile {
         match *self {
             PidCols::Pid => PidFile::PidStat,
+            PidCols::Tid => PidFile::PidStat,
             PidCols::Ppid => PidFile::PidStat,
+            PidCols::Tgid => PidFile::PidStatus,
+            PidCols::RSS => PidFile::PidStatus,
+            PidCols::Time => PidFile::PidStatus,
+            PidCols::Cmd => PidFile::PidStat,
+            PidCols::CmdLine => PidFile::PidCmdline
         }
     }
-    // fn get_files(cols: &[PidCols]) -> HashSet<PidCols> {
-    //     let mut files = HashSet::new();
-    //     for col in cols {
-    //         files.insert(
-    //     }
-    // }
 }
 
 // Implement FromStr to allow parsing a list of columns specified by a user
