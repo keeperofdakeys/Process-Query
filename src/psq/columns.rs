@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use procrs::pid::PidFile;
 
 // FIXME: This may be better in procps
-enum PidCols {
+enum PidCol {
     Pid,
     Tid,
     Tgid,
@@ -12,38 +12,52 @@ enum PidCols {
     RSS,
     Time,
     Cmd,
-    CmdLine
+    Cmdline
 }
 
-impl PidCols {
+impl PidCol {
     fn get_file(&self) -> PidFile {
         match *self {
-            PidCols::Pid => PidFile::PidStat,
-            PidCols::Tid => PidFile::PidStat,
-            PidCols::Ppid => PidFile::PidStat,
-            PidCols::Tgid => PidFile::PidStatus,
-            PidCols::RSS => PidFile::PidStatus,
-            PidCols::Time => PidFile::PidStatus,
-            PidCols::Cmd => PidFile::PidStat,
-            PidCols::CmdLine => PidFile::PidCmdline
+            PidCol::Pid => PidFile::PidStat,
+            PidCol::Tid => PidFile::PidStat,
+            PidCol::Ppid => PidFile::PidStat,
+            PidCol::Tgid => PidFile::PidStatus,
+            PidCol::RSS => PidFile::PidStatus,
+            PidCol::Time => PidFile::PidStatus,
+            PidCol::Cmd => PidFile::PidStat,
+            PidCol::Cmdline => PidFile::PidCmdline
         }
     }
-}
 
-// Implement FromStr to allow parsing a list of columns specified by a user
-impl FromStr for PidCols {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn to_str(s: PidCol) -> Result<&'static str, ()> {
         Ok(match s {
-            "pid" => PidCols::Pid,
-            "ppid" => PidCols::Ppid,
-            _ => return Err(()),
+            PidCol::Pid => "pid",
+            PidCol::Tid => "tid",
+            PidCol::Ppid => "ppid",
+            PidCol::Tgid => "tgid",
+            PidCol::RSS => "rss",
+            PidCol::Time => "time",
+            PidCol::Cmd => "cmd",
+            PidCol::Cmdline => "cmdline",
         })
     }
 }
 
+// Implement FromStr to allow parsing a list of columns specified by a user
+impl FromStr for PidCol {
+    type Err = ();
 
-// Implement ToStr to get a list of columns specified by a user
-// impl ToStr for PidColumns {
-// }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "pid" => PidCol::Pid,
+            "tid" => PidCol::Tid,
+            "ppid" => PidCol::Ppid,
+            "tgid" => PidCol::Tgid,
+            "rss" => PidCol::RSS,
+            "time" => PidCol::Time,
+            "cmd" => PidCol::Cmd,
+            "cmdline" => PidCol::Cmdline,
+            _ => return Err(()),
+        })
+    }
+}
