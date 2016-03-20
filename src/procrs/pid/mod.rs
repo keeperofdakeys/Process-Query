@@ -142,6 +142,7 @@ impl Ord for Pid {
 }
 
 /// A list of files in the pid directory.
+#[derive(PartialEq, Eq, Hash)]
 pub enum PidFile {
     PidStatus,
     PidStat,
