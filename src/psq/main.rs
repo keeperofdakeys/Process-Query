@@ -12,6 +12,8 @@ use procrs::pid::*;
 use procrs::TaskId;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
+mod columns;
+
 fn main() {
     let opts = parse_args();
     let (query, long, perf, verbose, tree, threads) =
@@ -67,19 +69,7 @@ fn main() {
                 true => name_indent.remove(&p.stat.pid).unwrap()
             };
 
-            // For long output, try using the cmdline first.
-            // FIXME: Sometimes prog_name != cmdline[0].
-            if !long {
-                name.push_str(&p.stat.comm);
-            } else {
-                let cmdline = p.cmdline.join(" ");
-                name.push_str(
-                    match cmdline {
-                         ref s if s.len() > 0 => s,
-                        _ => &p.stat.comm
-                    }
-                );
-            }
+            name.push_str(&p.stat.comm);
 
             let mut row = Vec::new();
             match threads {
@@ -111,6 +101,9 @@ fn main() {
                 }
             }
             row.push(cell!(name));
+            if long {
+                row.push(cell!(p.cmdline.join(" ")));
+            }
             Row::new(row)
         }).collect::<Vec<_>>()
     );
@@ -129,6 +122,9 @@ fn main() {
         (_, true) =>
             titles.extend_from_slice(&[cell!("RSS"), cell!("Time"), cell!("Cmd")])
     };
+    if long {
+        titles.push(cell!("Cmdline"));
+    }
     table.set_titles(Row::new(titles));
     table.set_format(
         FormatBuilder::new()

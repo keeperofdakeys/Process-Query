@@ -1,11 +1,31 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
-use std::collections::HashSet;
 use std::num::ParseIntError;
-use std::str::FromStr;
 use ::error::{ProcError, ProcFile, ProcOper};
 use ::{TaskId, MemSize};
+
+/// Parse a line, by turning a parsing error into a ProcError
+macro_rules! parse {
+    ($value: expr, $key: expr) => {
+        Some(try!(
+        $value.map_err(|e|
+            ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
+                Some(e), Some($key))
+        )))
+    }
+}
+
+/// Unwrap a line, emitting a "missing '$key'" ProcError if None
+macro_rules! unwrap {
+    ($value: expr, $key: expr) => {
+        try!(
+        $value.ok_or(
+            ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
+                Some(concat!("missing ", $key)))
+        ))
+    }
+}
 
 #[derive(Debug, PartialEq)]
 /// A struct containing information from the status file for a process.
@@ -14,105 +34,52 @@ use ::{TaskId, MemSize};
 /// /proc/[tgid]/task/[tid]/status file, for a specific pid or tgid/tid.
 pub struct PidStatus {
     // TODO: Maybe these should all be optional, and be more annoying to call
+    /// Command run by this process.
     pub name: String,
+    /// Thread group ID (ie: Process ID).
     pub tgid: TaskId,
+    /// Thread ID.
     pub pid: TaskId,
+    /// PID of parent process.
     pub ppid: TaskId,
+    /// PID of process tracing this process (0 if not being traced).
     pub tracerpid: TaskId,
-    // uid: Real, Effective, Saved, Filesystem
+    /// Real, effective, saved set, file system UIDs.
     pub uid: (u32, u32, u32, u32),
-    // gid: Real, Effective, Saved, Filesystem
+    /// Real, effective, saved set, file system GIDs.
     pub gid: (u32, u32, u32, u32),
+    /// Number of file descriptor slots currently allocated.
     pub fdsize: u32,
+    /// Peak virtual memory size.
     pub vmpeak: Option<MemSize>,
+    /// Virtual memory size.
     pub vmsize: Option<MemSize>,
+    /// Locked memory size.
     pub vmlck: Option<MemSize>,
+    /// Pinned memory size. These are pages that can't be moved because something needs
+    /// to directly access physical memory.
     pub vmpin: Option<MemSize>,
+    /// Peak resident set size ("high water mark").
     pub vmhwm: Option<MemSize>,
+    /// Resident set size.
     pub vmrss: Option<MemSize>,
+    /// Size of data segment.
     pub vmdata: Option<MemSize>,
+    /// Size of stack segment
     pub vmstk: Option<MemSize>,
+    /// Size of text segment.
     pub vmexe: Option<MemSize>,
+    /// Shared library code size.
     pub vmlib: Option<MemSize>,
+    /// Page table entries size.
     pub vmpte: Option<MemSize>,
+    /// Size of second-level page tables.
     pub vmpmd: Option<MemSize>,
+    /// Swapped-out virtual memory size by anonymous private pages; shmem swap usage
+    /// is not included.
     pub vmswap: Option<MemSize>,
+    /// Number of threads in process containing this thread.
     pub threads: u32
-}
-
-/// Extract a line, and error on missing value, or parsing failure.
-macro_rules! extract_line {
-    ($lines:expr, $key: expr, $func: expr) => {
-        // Default value for missing fields.
-        match extract_line_opt!( $lines, $key, $func) {
-            Some(value) => value,
-            None => return Err(
-                ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus,
-                    Some(concat!("missing ", $key)))
-            ),
-        }
-    }
-}
-
-/// Extract a line, evalute to an Option (None on missing field), error on parsing
-/// failure.
-macro_rules! extract_line_opt {
-    ($lines: expr, $key: expr, $func: expr) => { {
-        // Default value for missing fields>
-        let mut value = None;
-        let mut next_val = false;
-        loop {
-            {
-                if next_val {
-                    let _ = $lines.by_ref().next();
-                }
-                // Break if iterator is finished
-                if $lines.by_ref().peek().is_none() {
-                    break;
-                }
-                // Return error if value is Err
-                if $lines.by_ref().peek().as_ref().unwrap().is_err() {
-                    let _ = try!($lines.by_ref().next().unwrap());
-                }
-                // Finally peek value to decode
-                let line = $lines.by_ref().peek().as_ref().unwrap().as_ref().unwrap();
-                // Find colon offset, error on no match.
-                let colon_offset = match line.find(':') {
-                    Some(i) => i,
-                    None => return Err(
-                        ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon"))
-                    ),
-                };
-                // Split into Key: Value based on colon offset.
-                let (first, second) = line.split_at(colon_offset);
-                let key = first.trim();
-                let (_, last) = second.split_at(1);
-                let line_val = last.trim();
-                // If we're not looking for this key, try the next one.
-                if !STATUS_COLS.contains(key) {
-                    next_val = true;
-                    continue;
-                }
-                // If key doesn't match, break
-                if $key != key {
-                    break;
-                }
-
-                // Call parsing function after trimming value.
-                // (Funcs must assume they will only get a borrowed string)
-                value = Some(try!(
-                    $func(line_val).map_err(|e|
-                        ProcError::new(ProcOper::ParsingField, ProcFile::PidStatus,
-                            Some(e), Some($key))
-                    )
-                ));
-            }
-            let _ = $lines.by_ref().next();
-            // We have finished finding this value, get next one.
-            break;
-        }
-        value
-    } }
 }
 
 impl PidStatus {
@@ -137,56 +104,79 @@ impl PidStatus {
     }
 
     /// Parse an Iterator of lines as a /proc/[pid]/status file.
-    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines_iter: I) -> Result<Self, ProcError> {
-        let mut lines = lines_iter.peekable();
-        // It's quite important that these appear in the order that they
-        // appear in the status file
-        Ok(PidStatus{
-            name: extract_line!(lines, "Name", |s| Ok((s as &str).to_owned()) as Result<String, ProcError>),
-            tgid: extract_line!(lines, "Tgid", parse_any),
-            pid: extract_line!(lines, "Pid", parse_any),
-            ppid: extract_line!(lines, "PPid", parse_any),
-            tracerpid: extract_line!(lines, "TracerPid", parse_any),
-            uid : extract_line!(lines, "Uid", parse_uids),
-            gid : extract_line!(lines, "Gid", parse_uids),
-            fdsize : extract_line!(lines, "FDSize", parse_any),
-            vmpeak: extract_line_opt!(lines, "VmPeak", parse_mem),
-            vmsize: extract_line_opt!(lines, "VmSize", parse_mem),
-            vmlck: extract_line_opt!(lines, "VmLck", parse_mem),
-            vmpin: extract_line_opt!(lines, "VmPin", parse_mem),
-            vmhwm: extract_line_opt!(lines, "VmHWM", parse_mem),
-            vmrss: extract_line_opt!(lines, "VmRSS", parse_mem),
-            vmdata: extract_line_opt!(lines, "VmData", parse_mem),
-            vmstk: extract_line_opt!(lines, "VmStk", parse_mem),
-            vmexe: extract_line_opt!(lines, "VmExe", parse_mem),
-            vmlib: extract_line_opt!(lines, "VmLib", parse_mem),
-            vmpte: extract_line_opt!(lines, "VmPTE", parse_mem),
-            vmpmd: extract_line_opt!(lines, "VmPMD", parse_mem),
-            vmswap: extract_line_opt!(lines, "VmSwap", parse_mem),
-            threads: extract_line!(lines, "Threads", parse_any)
+    fn parse_string<I: Iterator<Item=Result<String, ProcError>>>(lines: I) -> Result<Self, ProcError> {
+        let (mut name, mut tgid, mut pid, mut ppid, mut tracerpid, mut uid,
+            mut gid, mut fdsize, mut vmpeak, mut vmsize, mut vmlck, mut vmpin,
+            mut vmhwm, mut vmrss, mut vmdata, mut vmstk, mut vmexe, mut vmlib,
+            mut vmpte, mut vmpmd, mut vmswap, mut threads) =
+            (None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None);
+        for line in lines {
+            let line = try!(line);
+            // Find colon offset, error on no match.
+            let colon_offset = match line.find(':') {
+                Some(i) => i,
+                None => return Err(
+                    ProcError::new_more(ProcOper::ParsingField, ProcFile::PidStatus, Some("Line missing colon"))
+                ),
+            };
+            // Split into Key: Value based on colon offset.
+            let (first, second) = line.split_at(colon_offset);
+            let key = first.trim();
+            let (_, last) = second.split_at(1);
+            let value = last.trim();
+
+            match key {
+                "Name" => name = parse!(Ok(value.to_owned()) as Result<String, ProcError>, "Name"),
+                "Tgid" => tgid = parse!(value.parse(), "Tgid"),
+                "Pid" => pid = parse!(value.parse(), "Pid"),
+                "PPid" => ppid = parse!(value.parse(), "PPid"),
+                "TracerPid" => tracerpid = parse!(value.parse(), "TracerPid"),
+                "Uid" => uid  = parse!(parse_uids(value), "Uid"),
+                "Gid" => gid  = parse!(parse_uids(value), "Gid"),
+                "FDSize" => fdsize  = parse!(value.parse(), "FDSize"),
+                "VmPeak" => vmpeak = parse!(parse_mem(value), "VmPeak"),
+                "VmSize" => vmsize = parse!(parse_mem(value), "VmSize"),
+                "VmLck" => vmlck = parse!(parse_mem(value), "VmLck"),
+                "VmPin" => vmpin = parse!(parse_mem(value), "VmPin"),
+                "VmHWM" => vmhwm = parse!(parse_mem(value), "VmHWM"),
+                "VmRSS" => vmrss = parse!(parse_mem(value), "VmRSS"),
+                "VmData" => vmdata = parse!(parse_mem(value), "VmData"),
+                "VmStk" => vmstk = parse!(parse_mem(value), "VmStk"),
+                "VmExe" => vmexe = parse!(parse_mem(value), "VmExe"),
+                "VmLib" => vmlib = parse!(parse_mem(value), "VmLib"),
+                "VmPTE" => vmpte = parse!(parse_mem(value), "VmPTE"),
+                "VmPMD" => vmpmd = parse!(parse_mem(value), "VmPMD"),
+                "VmSwap" => vmswap = parse!(parse_mem(value), "VmSwap"),
+                "Threads" => threads = parse!(value.parse(), "Threads"),
+                _ => continue,
+            };
+        }
+        Ok(PidStatus {
+            name: unwrap!(name, "Name"),
+            tgid: unwrap!(tgid, "Tgid"),
+            pid: unwrap!(pid, "Pid"),
+            ppid: unwrap!(ppid, "PPid"),
+            tracerpid: unwrap!(tracerpid, "TracerPid"),
+            uid: unwrap!(uid, "Uid"),
+            gid: unwrap!(gid, "Gid"),
+            fdsize: unwrap!(fdsize, "FDSize"),
+            vmpeak: vmpeak,
+            vmsize: vmsize,
+            vmlck: vmlck,
+            vmpin: vmpin,
+            vmhwm: vmhwm,
+            vmrss: vmrss,
+            vmdata: vmdata,
+            vmstk: vmstk,
+            vmexe: vmexe,
+            vmlib: vmlib,
+            vmpte: vmpte,
+            vmpmd: vmpmd,
+            vmswap: vmswap,
+            threads: unwrap!(threads, "Threads"),
         })
     }
-}
-
-lazy_static! {
-    // This vec should contain all columns that the parser is looking for,
-    // at the moment this is definitely static.
-    //
-    // If this is not kept uptodate, the values will be ignored.
-    static ref STATUS_COLS: HashSet<String> = vec!["Name", "Tgid", "Pid", "PPid",
-        "TracerPid", "Uid", "Gid", "FDSize", "VmPeak", "VmSize", "VmLck",
-        "VmPin", "VmHWM", "VmRSS", "VmData", "VmStk", "VmExe", "VmLib",
-        "VmPMD", "VmPTE", "VmSwap", "Threads"]
-            .into_iter()
-            .map(|s| s.to_owned())
-            .collect();
-}
-
-
-
-/// Parse anything that's parsable from a string.
-fn parse_any<N: FromStr>(str: &str) -> Result<N, N::Err> {
-    str.parse()
 }
 
 /// Parse a set of four numbers as uids or gids.
