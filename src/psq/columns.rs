@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::iter::IntoIterator;
 use std::collections::HashSet;
-use procrs::pid::PidFile;
+use procrs::pid::{PidFile, Pid};
 
 // FIXME: This may be better in procps
 enum PidCol {
@@ -39,8 +39,8 @@ impl PidCol {
     }
 
     /// Get the str of this column.
-    fn to_str(s: &PidCol) -> Result<&'static str, ()> {
-        Ok(match *s {
+    fn to_str(&self) -> Result<&'static str, ()> {
+        Ok(match *self {
             PidCol::Pid => "pid",
             PidCol::Tid => "tid",
             PidCol::Ppid => "ppid",
@@ -53,8 +53,8 @@ impl PidCol {
     }
 
     /// Get the title of this column>
-    fn to_title(s: &PidCol) -> Result<&'static str, ()> {
-        Ok(match *s {
+    fn to_title(&self) -> Result<&'static str, ()> {
+        Ok(match *self {
             PidCol::Pid => "Pid",
             PidCol::Tid => "Iid",
             PidCol::Ppid => "Ppid",
@@ -92,4 +92,18 @@ impl FromStr for PidCol {
             _ => return Err(()),
         })
     }
+}
+
+fn create_titles(cols: &[PidCol]) -> Vec<String> {
+  cols.iter().map(|c| {
+    c.to_title().unwrap().to_owned()
+  }).collect()
+}
+
+fn create_row(cols: &[PidCol], pid: Pid) -> Vec<String> {
+  cols.iter().map(|c| {
+    match c.to_str() {
+      _ => unimplemented!()
+    }
+  }).collect()
 }
