@@ -311,7 +311,7 @@
     <span class='kw'>pub</span> <span class='ident'>hugepagessize</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>directmap4k</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>directmap2m</span>: <span class='ident'>u64</span>,
-    <span class='kw'>pub</span> <span class='ident'>directmap1g</span>: <span class='ident'>u64</span>,
+    <span class='comment'>// pub directmap1g: u64,</span>
     <span class='kw'>pub</span> <span class='ident'>mainused</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>maincached</span>: <span class='ident'>u64</span>,
     <span class='kw'>pub</span> <span class='ident'>mainswapused</span>: <span class='ident'>u64</span>,
@@ -413,7 +413,7 @@
             <span class='ident'>hugepagessize</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;Hugepagesize&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>directmap4k</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap4k&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>directmap2m</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap2M&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
-            <span class='ident'>directmap1g</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;DirectMap1G&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
+            <span class='comment'>// directmap1g: hmap.get(&quot;DirectMap1G&quot;).unwrap().clone(),</span>
             <span class='ident'>mainused</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainUsed&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>maincached</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainCached&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),
             <span class='ident'>mainswapused</span>: <span class='ident'>hmap</span>.<span class='ident'>get</span>(<span class='string'>&quot;MainSwapUsed&quot;</span>).<span class='ident'>unwrap</span>().<span class='ident'>clone</span>(),

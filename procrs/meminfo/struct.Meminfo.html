@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1511' class='srclink' href='../../src/procrs/meminfo/mod.rs.html#29-77' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1534' class='srclink' href='../../src/procrs/meminfo/mod.rs.html#29-77' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Meminfo {
     pub memtotal: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub memfree: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
@@ -91,7 +91,6 @@
     pub hugepagessize: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub directmap4k: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub directmap2m: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
-    pub directmap1g: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub mainused: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub maincached: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
     pub mainswapused: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
@@ -140,7 +139,6 @@
                                   <td id='structfield.hugepagessize'><code>hugepagessize</code></td><td></td></tr><tr class='stab '>
                                   <td id='structfield.directmap4k'><code>directmap4k</code></td><td></td></tr><tr class='stab '>
                                   <td id='structfield.directmap2m'><code>directmap2m</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.directmap1g'><code>directmap1g</code></td><td></td></tr><tr class='stab '>
                                   <td id='structfield.mainused'><code>mainused</code></td><td></td></tr><tr class='stab '>
                                   <td id='structfield.maincached'><code>maincached</code></td><td></td></tr><tr class='stab '>
                                   <td id='structfield.mainswapused'><code>mainswapused</code></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../procrs/meminfo/struct.Meminfo.html' title='procrs::meminfo::Meminfo'>Meminfo</a></code></h3><div class='docblock'><p>Parses the contents of /proc/meminfo into a new Meminfo structure</p>
